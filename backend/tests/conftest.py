@@ -8,6 +8,7 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 @pytest.fixture(scope="session")
 def engine():
     from backend.database import Base
+    import backend.models  # noqa: F401 — registers all table metadata on Base
     eng = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=eng)
     yield eng
