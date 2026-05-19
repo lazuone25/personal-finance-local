@@ -6,15 +6,13 @@
 </head>
 <body>
   <h2>Authorization complete</h2>
-  <p id="msg">Processing...</p>
-  <pre id="params"></pre>
+  <p id="msg">Se redirectioneaza catre aplicatie...</p>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    if (params.toString()) {
-      document.getElementById("msg").textContent = "Copy the code below and paste it into your app:";
-      document.getElementById("params").textContent = window.location.search;
+    const params = window.location.search;
+    if (params) {
+      window.location.href = "http://localhost:8000/api/auth/callback" + params;
     } else {
-      document.getElementById("msg").textContent = "No parameters received.";
+      document.getElementById("msg").textContent = "Niciun parametru primit de la banca.";
     }
   </script>
 </body>
