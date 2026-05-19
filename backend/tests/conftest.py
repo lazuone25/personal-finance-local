@@ -21,22 +21,34 @@ def engine():
 
 @pytest.fixture
 def db(engine):
-    TestingSessionLocal = sessionmaker(bind=engine)
+    connection = engine.connect()
+    transaction = connection.begin()
+    TestingSessionLocal = sessionmaker(bind=connection)
     session = TestingSessionLocal()
     yield session
-    session.rollback()
     session.close()
+    transaction.rollback()
+    connection.close()
 
 @pytest.fixture
 def client(engine):
     from backend.main import app
     from backend.database import get_db
-    TestingSessionLocal = sessionmaker(bind=engine)
+
+    connection = engine.connect()
+    transaction = connection.begin()
+    TestingSessionLocal = sessionmaker(bind=connection)
+
     def override_get_db():
         session = TestingSessionLocal()
         try:
             yield session
         finally:
             session.close()
+
     app.dependency_overrides[get_db] = override_get_db
-    return TestClient(app)
+
+    yield TestClient(app)
+
+    transaction.rollback()
+    connection.close()
