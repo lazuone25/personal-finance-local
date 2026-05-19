@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Authorization Callback</title>
+</head>
+<body>
+  <h2>Authorization complete</h2>
+  <p id="msg">Processing...</p>
+  <pre id="params"></pre>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.toString()) {
+      document.getElementById("msg").textContent = "Copy the code below and paste it into your app:";
+      document.getElementById("params").textContent = window.location.search;
+    } else {
+      document.getElementById("msg").textContent = "No parameters received.";
+    }
+  </script>
+</body>
+</html>
