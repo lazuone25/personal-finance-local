@@ -1,0 +1,81 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from './client'
+
+export function useBanks() {
+  return useQuery({
+    queryKey: ['banks'],
+    queryFn: () => api.get('/banks').then(r => r.data.banks),
+  })
+}
+
+export function useConnections() {
+  return useQuery({
+    queryKey: ['connections'],
+    queryFn: () => api.get('/connections').then(r => r.data.connections),
+    refetchInterval: 3000,
+  })
+}
+
+export function useConnectBank() {
+  return useMutation({
+    mutationFn: ({ bank_id, bank_name }) =>
+      api.post(`/auth/connect/${bank_id}`, { bank_id, bank_name }).then(r => r.data),
+  })
+}
+
+export function useDisconnectBank() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/connections/${id}`).then(r => r.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['connections'] }),
+  })
+}
+
+export function useAccounts() {
+  return useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => api.get('/accounts').then(r => r.data),
+  })
+}
+
+export function useLiveBalance(accountId) {
+  return useQuery({
+    queryKey: ['balance', accountId],
+    queryFn: () => api.get(`/accounts/${accountId}/balance`).then(r => r.data),
+    enabled: !!accountId,
+  })
+}
+
+export function useTransactions(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.bank_id) params.set('bank_id', filters.bank_id)
+  if (filters.account_id) params.set('account_id', filters.account_id)
+  if (filters.date_from) params.set('date_from', filters.date_from)
+  if (filters.date_to) params.set('date_to', filters.date_to)
+  if (filters.transaction_type) params.set('transaction_type', filters.transaction_type)
+
+  return useQuery({
+    queryKey: ['transactions', filters],
+    queryFn: () => api.get(`/transactions?${params}`).then(r => r.data.transactions),
+  })
+}
+
+export function useSyncStatus() {
+  return useQuery({
+    queryKey: ['sync-status'],
+    queryFn: () => api.get('/sync/status').then(r => r.data),
+    refetchInterval: 30000,
+  })
+}
+
+export function useManualSync() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post('/sync').then(r => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    },
+  })
+}
