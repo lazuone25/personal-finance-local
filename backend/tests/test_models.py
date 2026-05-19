@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 
 
 def test_create_bank_connection(db):
@@ -85,7 +85,7 @@ def test_create_transaction(db):
         amount=50.00,
         currency="RON",
         description="Coffee",
-        booking_date="2026-05-15",
+        booking_date=date(2026, 5, 15),
         transaction_type="debit",
     )
     db.add(tx)
@@ -115,10 +115,10 @@ def test_transaction_external_id_unique(db):
 
     tx1 = Transaction(account_id=acc.id, external_id="dup-tx-1",
                       amount=10.0, currency="RON", description="A",
-                      booking_date="2026-05-01", transaction_type="debit")
+                      booking_date=date(2026, 5, 1), transaction_type="debit")
     tx2 = Transaction(account_id=acc.id, external_id="dup-tx-1",
                       amount=20.0, currency="RON", description="B",
-                      booking_date="2026-05-02", transaction_type="credit")
+                      booking_date=date(2026, 5, 2), transaction_type="credit")
     db.add(tx1)
     db.commit()
     db.add(tx2)

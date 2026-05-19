@@ -72,8 +72,8 @@ class Transaction(Base):
     amount = Column(Numeric(15, 2), nullable=False)
     currency = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    booking_date = Column(String, nullable=False)
-    value_date = Column(String, nullable=True)
+    booking_date = Column(Date, nullable=False)
+    value_date = Column(Date, nullable=True)
     transaction_type = Column(SAEnum(TransactionType), nullable=False)
 
     account = relationship("Account", back_populates="transactions")
