@@ -75,3 +75,18 @@ def test_sync_skips_duplicate_transactions(db):
     from sqlalchemy import func
     count = db.query(func.count(Transaction.id)).filter_by(external_id="dup-tx-002").scalar()
     assert count == 1
+
+
+def test_get_sync_status(client):
+    response = client.get("/api/sync/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "last_sync" in data
+    assert "interval_minutes" in data
+
+
+def test_manual_sync_trigger(client):
+    with patch("backend.routers.sync.sync_all", return_value={"synced_at": "2026-05-19T12:00:00", "banks": []}):
+        response = client.post("/api/sync")
+    assert response.status_code == 200
+    assert "synced_at" in response.json()
