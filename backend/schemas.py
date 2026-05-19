@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from backend.models import AccountType, TransactionType
 
 
@@ -31,8 +31,7 @@ class ConnectionOut(BaseModel):
     connected_at: datetime
     is_active: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Accounts / Balances ────────────────────────────────────
@@ -42,8 +41,7 @@ class BalanceOut(BaseModel):
     currency: str
     last_updated: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AccountOut(BaseModel):
@@ -57,8 +55,7 @@ class AccountOut(BaseModel):
     account_type: AccountType
     balance: Optional[BalanceOut]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AccountsGrouped(BaseModel):
@@ -82,8 +79,7 @@ class TransactionOut(BaseModel):
     value_date: Optional[date]
     transaction_type: TransactionType
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Sync ───────────────────────────────────────────────────
