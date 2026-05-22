@@ -60,17 +60,30 @@ def auth_callback(state: str, code: str, db: Session = Depends(get_db)):
     db.commit()
 
     for acc_data in session_data["accounts"]:
-        existing = db.query(Account).filter_by(external_id=acc_data["uid"]).first()
-        if not existing:
-            acc = Account(
-                bank_connection_id=conn.id,
-                external_id=acc_data["uid"],
-                iban=acc_data.get("iban"),
-                name=acc_data.get("name", "Account"),
-                currency=acc_data.get("currency", "RON"),
-                account_type=AccountType(acc_data["internal_type"]),
-            )
-            db.add(acc)
+        uid = acc_data["uid"]
+        # Primary dedup: exact external_id match
+        existing = db.query(Account).filter_by(external_id=uid).first()
+        if existing:
+            continue
+        # Secondary dedup: same bank + currency + name — handles banks that rotate UIDs on reconnect
+        existing_by_attrs = db.query(Account).filter_by(
+            bank_connection_id=conn.id,
+            currency=acc_data.get("currency", "RON"),
+            name=acc_data.get("name", "Account"),
+        ).first()
+        if existing_by_attrs:
+            # Update UID so future syncs use the new one
+            existing_by_attrs.external_id = uid
+            continue
+        acc = Account(
+            bank_connection_id=conn.id,
+            external_id=uid,
+            iban=acc_data.get("iban"),
+            name=acc_data.get("name", "Account"),
+            currency=acc_data.get("currency", "RON"),
+            account_type=AccountType(acc_data["internal_type"]),
+        )
+        db.add(acc)
     db.commit()
 
     return {"status": "connected", "bank": conn.bank_name, "accounts_found": len(session_data["accounts"])}
