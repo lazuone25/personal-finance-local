@@ -284,7 +284,7 @@ export default function Deposits() {
         </div>
       )}
 
-      {/* Deposits card grid */}
+      {/* Deposits card list */}
       {deposits.length === 0 && !showForm ? (
         <div style={{
           background: '#fff',
@@ -298,12 +298,12 @@ export default function Deposits() {
           <p style={{ fontSize: '0.875rem' }}>Apasă „+ Adaugă depozit" pentru a înregistra primul depozit.</p>
         </div>
       ) : deposits.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {sortedDeposits.map(d => {
             if (editId === d.id && editForm) {
               return (
-                <div key={d.id} style={{ background: '#EFF6FF', borderRadius: 12, padding: '1.25rem 1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #3B82F6' }}>
-                  <h3 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#0F172A' }}>Editează depozit</h3>
+                <div key={d.id} style={{ background: '#EFF6FF', borderRadius: 12, padding: '1.25rem 1.75rem', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #3B82F6' }}>
+                  <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', fontWeight: 700, color: '#0F172A' }}>Editează — {d.name || d.bank_name}</p>
                   <form onSubmit={handleEditSave}>
                     <DepositFormFields values={editForm} onChange={(k, v) => setEditForm(prev => ({ ...prev, [k]: v }))} />
                     <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem' }}>
@@ -318,21 +318,17 @@ export default function Deposits() {
               <div key={d.id} style={{
                 background: '#fff',
                 borderRadius: 12,
-                padding: '1.25rem 1.5rem',
+                padding: '1.25rem 1.75rem',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                 borderLeft: `4px solid ${getBankColor(d.bank_name)}`,
               }}>
-                {/* Top row: bank dot + name + label, and days badge top-right */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: getBankColor(d.bank_name), flexShrink: 0, display: 'inline-block' }} />
-                    <div>
-                      <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', margin: 0 }}>{d.bank_name}</p>
-                      {d.name && <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0 }}>{d.name}</p>}
-                    </div>
-                  </div>
+                {/* Top: label as title (or bank name if no label), days badge */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem' }}>
+                  <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A', margin: 0 }}>
+                    {d.name || d.bank_name}
+                  </p>
                   <span style={{
-                    padding: '0.2rem 0.6rem',
+                    padding: '0.2rem 0.7rem',
                     borderRadius: 20,
                     fontSize: '0.8rem',
                     fontWeight: 700,
@@ -343,32 +339,42 @@ export default function Deposits() {
                   </span>
                 </div>
 
-                {/* Amount row */}
-                <p style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: '0 0 0.25rem' }}>
-                  {formatAmount(d.amount)} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8' }}>{d.currency}</span>
-                </p>
-
-                {/* Period + rate */}
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 0.75rem' }}>
-                  {d.start_date} → {d.maturity_date} · <strong>{parseFloat(d.interest_rate).toFixed(2)}%</strong>/an
-                </p>
-
-                {/* Interest + total */}
-                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
-                  <div>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.15rem' }}>Dobândă</p>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10B981', margin: 0 }}>+{formatAmount(d.interest_earned)}</p>
+                {/* Main content row: amount left, stats right, actions far right */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                  {/* Amount */}
+                  <div style={{ minWidth: 140 }}>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                      {formatAmount(d.amount)}
+                      <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8', marginLeft: '0.3rem' }}>{d.currency}</span>
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0.2rem 0 0' }}>
+                      {d.start_date} → {d.maturity_date} · <strong>{parseFloat(d.interest_rate).toFixed(2)}%</strong>/an
+                    </p>
                   </div>
-                  <div>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.15rem' }}>Total scadență</p>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>{formatAmount(d.total_at_maturity)}</p>
-                  </div>
-                </div>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => { setEditId(d.id); setEditForm({ bank_name: d.bank_name, amount: d.amount, currency: d.currency, interest_rate: d.interest_rate, start_date: d.start_date, maturity_date: d.maturity_date, name: d.name || '' }); setShowForm(false) }} style={btnSecondary}>Editează</button>
-                  <button onClick={() => handleDelete(d.id)} style={btnDanger}>Șterge</button>
+                  {/* Separator */}
+                  <div style={{ width: 1, height: 40, background: '#E2E8F0', flexShrink: 0 }} />
+
+                  {/* Dobândă */}
+                  <div>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.2rem' }}>Dobândă</p>
+                    <p style={{ fontSize: '1rem', fontWeight: 700, color: '#10B981', margin: 0 }}>+{formatAmount(d.interest_earned)}</p>
+                  </div>
+
+                  {/* Separator */}
+                  <div style={{ width: 1, height: 40, background: '#E2E8F0', flexShrink: 0 }} />
+
+                  {/* Total */}
+                  <div>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.2rem' }}>Total scadență</p>
+                    <p style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>{formatAmount(d.total_at_maturity)}</p>
+                  </div>
+
+                  {/* Actions pushed to the right */}
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    <button onClick={() => { setEditId(d.id); setEditForm({ bank_name: d.bank_name, amount: d.amount, currency: d.currency, interest_rate: d.interest_rate, start_date: d.start_date, maturity_date: d.maturity_date, name: d.name || '' }); setShowForm(false) }} style={btnSecondary}>Editează</button>
+                    <button onClick={() => handleDelete(d.id)} style={btnDanger}>Șterge</button>
+                  </div>
                 </div>
               </div>
             )
