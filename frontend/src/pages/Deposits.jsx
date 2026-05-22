@@ -142,13 +142,17 @@ export default function Deposits() {
   const [editId, setEditId] = useState(null)
   const [editForm, setEditForm] = useState(null)
 
-  // Summary per currency (sum of total_at_maturity)
+  // Summary per currency: principal (amount) and interest (interest_earned)
   const summary = {}
   for (const d of deposits) {
     const cur = d.currency
-    if (!summary[cur]) summary[cur] = 0
-    summary[cur] += parseFloat(d.total_at_maturity)
+    if (!summary[cur]) summary[cur] = { principal: 0, interest: 0 }
+    summary[cur].principal += parseFloat(d.amount)
+    summary[cur].interest += parseFloat(d.interest_earned)
   }
+
+  // Sort deposits by start_date ascending
+  const sortedDeposits = [...deposits].sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -232,16 +236,23 @@ export default function Deposits() {
 
       {/* Summary cards */}
       {Object.keys(summary).length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          {Object.entries(summary).map(([currency, total]) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          {Object.entries(summary).map(([currency, { principal, interest }]) => [
             <SummaryCard
-              key={currency}
-              title={`Total la scadență ${currency}`}
-              amount={total}
+              key={`principal-${currency}`}
+              title={`Total depozite ${currency}`}
+              amount={principal}
               currency={currency}
-              color={currency === 'RON' ? '#3B82F6' : currency === 'EUR' ? '#10B981' : '#F59E0B'}
-            />
-          ))}
+              color="#3B82F6"
+            />,
+            <SummaryCard
+              key={`interest-${currency}`}
+              title={`Dobânzi ${currency}`}
+              amount={interest}
+              currency={currency}
+              color="#10B981"
+            />,
+          ])}
         </div>
       )}
 
@@ -288,7 +299,8 @@ export default function Deposits() {
         </div>
       ) : deposits.length > 0 && (
         <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                 {['Bancă', 'Sumă inițială', 'Monedă', 'Rată', 'Perioadă', 'Dobândă acumulată', 'Total la scadență', 'Zile rămase', 'Acțiuni'].map(h => (
@@ -306,7 +318,7 @@ export default function Deposits() {
               </tr>
             </thead>
             <tbody>
-              {deposits.map(d => {
+              {sortedDeposits.map(d => {
                 const bankColor = getBankColor(d.bank_name)
                 const dColor = daysColor(d.days_remaining)
                 if (editId === d.id && editForm) {
@@ -413,6 +425,7 @@ export default function Deposits() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
