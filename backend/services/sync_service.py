@@ -20,10 +20,11 @@ def sync_all(db: Session) -> dict:
     date_to = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     for conn in connections:
-        try:
-            for acc in conn.accounts:
+        conn_ok = True
+        for acc in conn.accounts:
+            try:
                 # Update balance
-                balance_data = fetch_balance(acc.external_id, conn.session_id)
+                balance_data = fetch_balance(acc.external_id)
                 if acc.balance:
                     acc.balance.amount = balance_data["amount"]
                     acc.balance.currency = balance_data["currency"]
@@ -37,8 +38,10 @@ def sync_all(db: Session) -> dict:
                     ))
 
                 # Fetch and insert new transactions
-                txs = fetch_transactions(acc.external_id, conn.session_id, date_from, date_to)
+                txs = fetch_transactions(acc.external_id, date_from, date_to)
                 for tx in txs:
+                    if not tx.get("booking_date"):
+                        continue
                     exists = db.query(Transaction).filter_by(external_id=tx["transaction_id"]).first()
                     if exists:
                         continue
@@ -47,19 +50,23 @@ def sync_all(db: Session) -> dict:
                         external_id=tx["transaction_id"],
                         amount=tx["amount"],
                         currency=tx["currency"],
-                        description=tx.get("description", ""),
+                        description=tx.get("description") or None,
                         booking_date=date.fromisoformat(tx["booking_date"]),
                         value_date=date.fromisoformat(tx["value_date"]) if tx.get("value_date") else None,
                         transaction_type=TransactionType(tx["transaction_type"]),
                     )
                     db.add(new_tx)
 
-            db.commit()
+                db.commit()  # commit per account — rollback affects only this account
+            except Exception as e:
+                db.rollback()
+                conn_ok = False
+                logger.error(f"Sync failed for account {acc.external_id}: {e}")
+
+        if conn_ok:
             results.append({"bank": conn.bank_name, "status": "ok"})
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Sync failed for {conn.bank_name}: {e}")
-            results.append({"bank": conn.bank_name, "status": "error", "detail": str(e)})
+        else:
+            results.append({"bank": conn.bank_name, "status": "partial_error"})
 
     _last_sync = datetime.now(timezone.utc)
     return {"synced_at": _last_sync.isoformat(), "banks": results}

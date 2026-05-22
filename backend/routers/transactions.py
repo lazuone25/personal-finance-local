@@ -17,7 +17,7 @@ def get_transactions(
     account_id: Optional[int] = Query(None),
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
-    transaction_type: Optional[str] = Query(None),
+    transaction_type: Optional[TransactionType] = Query(default=None),
 ):
     q = (
         db.query(Transaction)
@@ -34,7 +34,7 @@ def get_transactions(
     if date_to:
         q = q.filter(Transaction.booking_date <= date_to)
     if transaction_type:
-        q = q.filter(Transaction.transaction_type == TransactionType(transaction_type))
+        q = q.filter(Transaction.transaction_type == transaction_type)
     txs = q.order_by(Transaction.booking_date.desc()).all()
     return {"transactions": [TransactionOut.model_validate(t) for t in txs]}
 

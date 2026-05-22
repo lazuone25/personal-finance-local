@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import BankConnection, Account, AccountType
 from backend.schemas import ConnectResponse, ConnectionOut
-from backend.services.banking import initiate_consent, fetch_accounts
+from backend.services.banking import initiate_consent, confirm_session
 import os
 
 router = APIRouter()
@@ -14,38 +14,51 @@ REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8000/api/auth/callbac
 
 
 @router.post("/auth/connect/{bank_id}", response_model=ConnectResponse)
-def connect_bank(bank_id: str, body: dict, db: Session = Depends(get_db)):
+def connect_bank(bank_id: str, body: dict = Body(...), db: Session = Depends(get_db)):
     bank_name = body.get("bank_name", bank_id)
     result = initiate_consent(bank_name, bank_id, REDIRECT_URI)
     # Store pending connection (is_active=False until callback confirms)
     existing = db.query(BankConnection).filter_by(bank_id=bank_id, is_active=False).first()
     if existing:
-        existing.session_id = result["session_id"]
+        existing.session_id = result["authorization_id"]
+        existing.state = result["state"]
         existing.connected_at = datetime.now(timezone.utc)
     else:
         conn = BankConnection(
             bank_id=bank_id,
             bank_name=bank_name,
-            session_id=result["session_id"],
+            session_id=result["authorization_id"],
+            state=result["state"],
             connected_at=datetime.now(timezone.utc),
             is_active=False,
         )
         db.add(conn)
     db.commit()
-    return result
+    return {"redirect_url": result["redirect_url"]}
 
 
 @router.get("/auth/callback")
-def auth_callback(session_id: str, state: str = None, db: Session = Depends(get_db)):
-    conn = db.query(BankConnection).filter_by(session_id=session_id).first()
+def auth_callback(state: str, code: str, db: Session = Depends(get_db)):
+    conn = db.query(BankConnection).filter_by(state=state).first()
     if not conn:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    session_data = confirm_session(code)
+    conn.session_id = session_data["session_id"]
     conn.is_active = True
+
+    # Deactivate any other active connections for the same bank
+    old_conns = db.query(BankConnection).filter(
+        BankConnection.bank_id == conn.bank_id,
+        BankConnection.id != conn.id,
+        BankConnection.is_active == True,
+    ).all()
+    for old in old_conns:
+        old.is_active = False
+
     db.commit()
 
-    accounts_data = fetch_accounts(session_id)
-    for acc_data in accounts_data:
+    for acc_data in session_data["accounts"]:
         existing = db.query(Account).filter_by(external_id=acc_data["uid"]).first()
         if not existing:
             acc = Account(
@@ -59,7 +72,7 @@ def auth_callback(session_id: str, state: str = None, db: Session = Depends(get_
             db.add(acc)
     db.commit()
 
-    return {"status": "connected", "bank": conn.bank_name, "accounts_found": len(accounts_data)}
+    return {"status": "connected", "bank": conn.bank_name, "accounts_found": len(session_data["accounts"])}
 
 
 @router.get("/connections")

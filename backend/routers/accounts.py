@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from backend.database import get_db
 from backend.models import Account, Balance, BankConnection, AccountType
@@ -14,6 +14,7 @@ router = APIRouter()
 def get_accounts(db: Session = Depends(get_db)):
     accounts = (
         db.query(Account)
+        .options(joinedload(Account.bank_connection), joinedload(Account.balance))
         .join(BankConnection)
         .filter(BankConnection.is_active == True)
         .all()
@@ -40,8 +41,7 @@ def get_live_balance(account_id: int, db: Session = Depends(get_db)):
     acc = db.query(Account).filter_by(id=account_id).first()
     if not acc:
         raise HTTPException(status_code=404, detail="Account not found")
-    session_id = acc.bank_connection.session_id
-    balance = fetch_balance(acc.external_id, session_id)
+    balance = fetch_balance(acc.external_id)
     # Update stored balance
     if acc.balance:
         acc.balance.amount = balance["amount"]
