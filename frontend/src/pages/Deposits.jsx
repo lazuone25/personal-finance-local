@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useDeposits, useCreateDeposit, useUpdateDeposit, useDeleteDeposit } from '../api/hooks'
+import { useDeposits, useCreateDeposit, useUpdateDeposit, useDeleteDeposit, useRates } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 import { getBankColor } from '../utils/bankColors'
 
@@ -11,6 +11,13 @@ const EMPTY_FORM = {
   start_date: '',
   maturity_date: '',
   name: '',
+}
+
+function toEur(ronAmount, rates) {
+  const rate = rates['EUR']
+  if (!rate || !ronAmount) return null
+  const eur = ronAmount / rate
+  return '(' + eur.toLocaleString('ro-RO', { maximumFractionDigits: 0 }) + ' EUR)'
 }
 
 function daysColor(days) {
@@ -136,6 +143,7 @@ export default function Deposits() {
   const createMutation = useCreateDeposit()
   const updateMutation = useUpdateDeposit()
   const deleteMutation = useDeleteDeposit()
+  const { data: rates = {} } = useRates()
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -243,10 +251,11 @@ export default function Deposits() {
               {/* Row 1: Total depozite — full width */}
               <div style={{ marginBottom: '0.75rem' }}>
                 <SummaryCard
-                  title={`Total depozite ${currency}`}
+                  title="Total depozite"
                   amount={principal}
                   currency={currency}
                   color="#3B82F6"
+                  extra={currency === 'RON' ? toEur(principal, rates) : null}
                 />
               </div>
               {/* Row 2: Dobânzi la zi + Dobânzi totale — equal halves */}

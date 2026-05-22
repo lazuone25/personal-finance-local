@@ -107,3 +107,11 @@ export function useDeleteDeposit() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['deposits'] }),
   })
 }
+
+export function useRates() {
+  return useQuery({
+    queryKey: ['rates'],
+    queryFn: () => api.get('/rates').then(r => r.data.rates),
+    staleTime: 60 * 60 * 1000, // 1 hour — BNR rates change once daily
+  })
+}
