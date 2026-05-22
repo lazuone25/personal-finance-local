@@ -1,10 +1,10 @@
 import { useAccounts, useTransactions, useSyncStatus } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 
-function groupByCurrency(accounts) {
-  const all = ['checking', 'card', 'savings', 'deposit', 'other']
-    .flatMap(t => accounts?.[t] || [])
+const ALL_TYPES = ['checking', 'card', 'savings', 'deposit', 'other']
 
+function groupByCurrency(accounts) {
+  const all = ALL_TYPES.flatMap(t => accounts?.[t] || [])
   const grouped = {}
   for (const acc of all) {
     const currency = acc.balance?.currency || acc.currency
@@ -16,11 +16,19 @@ function groupByCurrency(accounts) {
   return grouped
 }
 
-function sumByCurrencyAndType(accounts, types, currency) {
-  return types
-    .flatMap(t => accounts?.[t] || [])
-    .filter(a => (a.balance?.currency || a.currency) === currency)
-    .reduce((sum, a) => sum + parseFloat(a.balance?.amount || 0), 0)
+function groupByBank(accounts) {
+  const all = ALL_TYPES.flatMap(t => accounts?.[t] || [])
+  const banks = {}
+  for (const acc of all) {
+    const bank = acc.bank_name || 'Altele'
+    const currency = acc.balance?.currency || acc.currency
+    if (!currency) continue
+    const amount = parseFloat(acc.balance?.amount || 0)
+    if (!banks[bank]) banks[bank] = {}
+    if (!banks[bank][currency]) banks[bank][currency] = 0
+    banks[bank][currency] += amount
+  }
+  return banks
 }
 
 const CURRENCY_COLORS = {
@@ -35,11 +43,6 @@ function currencyColor(currency) {
   return CURRENCY_COLORS[currency] || '#888'
 }
 
-// Format amount with currency symbol
-function fmt(amount, currency) {
-  return `${parseFloat(amount).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} ${currency}`
-}
-
 export default function Dashboard() {
   const { data: accounts, isLoading, isError } = useAccounts()
   const { data: transactions = [] } = useTransactions()
@@ -50,17 +53,9 @@ export default function Dashboard() {
 
   const byCurrency = groupByCurrency(accounts)
   const currencyEntries = Object.entries(byCurrency).filter(([, amount]) => amount > 0)
-  const currencies = currencyEntries.map(([c]) => c)
+  const byBank = groupByBank(accounts)
+  const bankEntries = Object.entries(byBank)
   const recent = transactions.slice(0, 10)
-
-  // Category breakdowns per currency (only show currencies that have that account type)
-  const categoryRows = currencies.map(currency => {
-    const checking = sumByCurrencyAndType(accounts, ['checking', 'card'], currency)
-    const savings = sumByCurrencyAndType(accounts, ['savings'], currency)
-    const deposits = sumByCurrencyAndType(accounts, ['deposit'], currency)
-    const total = checking + savings + deposits + sumByCurrencyAndType(accounts, ['other'], currency)
-    return { currency, checking, savings, deposits, total }
-  }).filter(r => r.checking + r.savings + r.deposits > 0)
 
   return (
     <div>
@@ -90,25 +85,39 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Category breakdown per currency */}
-      {categoryRows.map(({ currency, checking, savings, deposits }) => (
-        <div key={currency} style={{ marginBottom: '2rem' }}>
+      {/* Per-bank breakdown */}
+      {bankEntries.length > 0 && (
+        <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '0.85rem', color: '#999', textTransform: 'uppercase', letterSpacing: 1, marginBottom: '0.75rem' }}>
-            Detaliu {currency}
+            Per bancă
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-            {checking > 0 && (
-              <SummaryCard title="Card / Cont curent" amount={checking} currency={currency} color="#3498db" />
-            )}
-            {savings > 0 && (
-              <SummaryCard title="Economii" amount={savings} currency={currency} color="#2ecc71" />
-            )}
-            {deposits > 0 && (
-              <SummaryCard title="Depozite" amount={deposits} currency={currency} color="#f39c12" />
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            {bankEntries.map(([bankName, currencies]) => {
+              const currList = Object.entries(currencies).filter(([, a]) => a > 0)
+              if (currList.length === 0) return null
+              // Primary currency for color (first by amount)
+              const primaryCurrency = currList.sort((a, b) => b[1] - a[1])[0][0]
+              // Format multi-currency label
+              const subtitle = currList
+                .map(([c, a]) => `${a.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} ${c}`)
+                .join(' · ')
+
+              return (
+                <div key={bankName} style={{
+                  background: '#fff',
+                  borderRadius: 8,
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  borderLeft: `4px solid ${currencyColor(primaryCurrency)}`,
+                }}>
+                  <p style={{ fontWeight: 700, marginBottom: '0.4rem', fontSize: '1rem' }}>{bankName}</p>
+                  <p style={{ color: '#555', fontSize: '0.9rem', lineHeight: 1.6 }}>{subtitle}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
-      ))}
+      )}
 
       <section>
         <h2>Tranzacții recente</h2>
