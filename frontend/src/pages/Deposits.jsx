@@ -142,13 +142,14 @@ export default function Deposits() {
   const [editId, setEditId] = useState(null)
   const [editForm, setEditForm] = useState(null)
 
-  // Summary per currency: principal (amount) and interest (interest_earned)
+  // Summary per currency: principal (amount), interest (interest_earned), totalInterest (at maturity)
   const summary = {}
   for (const d of deposits) {
     const cur = d.currency
-    if (!summary[cur]) summary[cur] = { principal: 0, interest: 0 }
+    if (!summary[cur]) summary[cur] = { principal: 0, interest: 0, totalInterest: 0 }
     summary[cur].principal += parseFloat(d.amount)
     summary[cur].interest += parseFloat(d.interest_earned)
+    summary[cur].totalInterest += parseFloat(d.total_at_maturity) - parseFloat(d.amount)
   }
 
   // Sort deposits by start_date ascending
@@ -236,23 +237,35 @@ export default function Deposits() {
 
       {/* Summary cards */}
       {Object.keys(summary).length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          {Object.entries(summary).map(([currency, { principal, interest }]) => [
-            <SummaryCard
-              key={`principal-${currency}`}
-              title={`Total depozite ${currency}`}
-              amount={principal}
-              currency={currency}
-              color="#3B82F6"
-            />,
-            <SummaryCard
-              key={`interest-${currency}`}
-              title={`Dobânzi ${currency}`}
-              amount={interest}
-              currency={currency}
-              color="#10B981"
-            />,
-          ])}
+        <div style={{ marginBottom: '2rem' }}>
+          {Object.entries(summary).map(([currency, { principal, interest, totalInterest }]) => (
+            <div key={currency} style={{ marginBottom: '1rem' }}>
+              {/* Row 1: Total depozite — full width */}
+              <div style={{ marginBottom: '0.75rem' }}>
+                <SummaryCard
+                  title={`Total depozite ${currency}`}
+                  amount={principal}
+                  currency={currency}
+                  color="#3B82F6"
+                />
+              </div>
+              {/* Row 2: Dobânzi la zi + Dobânzi totale — equal halves */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <SummaryCard
+                  title={`Dobânzi la zi ${currency}`}
+                  amount={interest}
+                  currency={currency}
+                  color="#10B981"
+                />
+                <SummaryCard
+                  title={`Dobânzi totale ${currency}`}
+                  amount={totalInterest}
+                  currency={currency}
+                  color="#8B5CF6"
+                />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
