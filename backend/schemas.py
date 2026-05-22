@@ -20,7 +20,6 @@ class ConnectRequest(BaseModel):
 
 class ConnectResponse(BaseModel):
     redirect_url: str
-    session_id: str
 
 
 class ConnectionOut(BaseModel):

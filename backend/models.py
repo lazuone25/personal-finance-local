@@ -29,6 +29,7 @@ class BankConnection(Base):
     bank_id = Column(String, nullable=False)
     bank_name = Column(String, nullable=False)
     session_id = Column(String, nullable=False)
+    state = Column(String, nullable=True)
     connected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
 

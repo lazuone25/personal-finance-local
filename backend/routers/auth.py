@@ -16,7 +16,8 @@ REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8000/api/auth/callbac
 @router.post("/auth/connect/{bank_id}", response_model=ConnectResponse)
 def connect_bank(bank_id: str, body: dict = Body(...), db: Session = Depends(get_db)):
     bank_name = body.get("bank_name", bank_id)
-    result = initiate_consent(bank_name, bank_id, REDIRECT_URI)
+    country = body.get("country", "RO")
+    result = initiate_consent(bank_name, bank_id, REDIRECT_URI, country)
     # Store pending connection (is_active=False until callback confirms)
     existing = db.query(BankConnection).filter_by(bank_id=bank_id, is_active=False).first()
     if existing:

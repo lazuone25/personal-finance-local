@@ -17,7 +17,7 @@ export default function AccountCard({ account }) {
               {parseFloat(balance.amount).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} {balance.currency}
             </p>
             <p style={{ color: '#aaa', fontSize: '0.75rem' }}>
-              {new Date(balance.last_updated).toLocaleString('ro-RO')}
+              {balance.last_updated ? new Date(balance.last_updated).toLocaleString('ro-RO') : 'N/A'}
             </p>
           </>
         ) : (

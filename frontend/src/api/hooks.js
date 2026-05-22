@@ -18,8 +18,8 @@ export function useConnections() {
 
 export function useConnectBank() {
   return useMutation({
-    mutationFn: ({ bank_id, bank_name }) =>
-      api.post(`/auth/connect/${bank_id}`, { bank_id, bank_name }).then(r => r.data),
+    mutationFn: ({ bank_id, bank_name, country = 'RO' }) =>
+      api.post(`/auth/connect/${bank_id}`, { bank_id, bank_name, country }).then(r => r.data),
   })
 }
 

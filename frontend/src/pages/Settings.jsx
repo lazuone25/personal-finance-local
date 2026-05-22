@@ -18,6 +18,7 @@ export default function Settings() {
       const result = await connectBank.mutateAsync({
         bank_id: selectedBank.bic,
         bank_name: selectedBank.name,
+        country: selectedBank.country || 'RO',
       })
       window.open(result.redirect_url, '_blank')
     } finally {
@@ -43,7 +44,7 @@ export default function Settings() {
             {banks
               .filter(b => !connectedIds.has(b.bic))
               .map(b => (
-                <option key={b.bic} value={b.bic}>{b.name}</option>
+                <option key={b.bic || b.name} value={b.bic}>{b.name}</option>
               ))}
           </select>
           <button

@@ -6,7 +6,7 @@ export default function SummaryCard({ title, amount, currency = 'RON', color = '
     }}>
       <p style={{ color: '#666', marginBottom: '0.5rem', fontSize: '0.9rem' }}>{title}</p>
       <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color }}>
-        {amount.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} {currency}
+        {(isFinite(amount) ? amount : 0).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} {currency}
       </p>
     </div>
   )

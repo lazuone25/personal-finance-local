@@ -24,17 +24,19 @@ def list_banks() -> list[dict]:
     return data.get("aspsps", [])
 
 
-def initiate_consent(bank_name: str, bank_id: str, redirect_uri: str) -> dict:
+def initiate_consent(bank_name: str, bank_id: str, redirect_uri: str, country: str = "RO") -> dict:
     import uuid
     state = str(uuid.uuid4())
     valid_until = (datetime.now(timezone.utc) + timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Strip display suffixes like " (EU)" from bank name before sending to Enable Banking
+    aspsp_name = bank_name.split(" (")[0].strip()
     body = {
         "access": {
             "valid_until": valid_until,
             "balances": True,
             "transactions": True,
         },
-        "aspsp": {"name": bank_name, "country": "RO"},
+        "aspsp": {"name": aspsp_name, "country": country},
         "state": state,
         "redirect_url": redirect_uri,
         "psu_type": "personal",

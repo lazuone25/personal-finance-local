@@ -10,9 +10,10 @@ const SECTIONS = [
 ]
 
 export default function Accounts() {
-  const { data: accounts, isLoading } = useAccounts()
+  const { data: accounts, isLoading, isError } = useAccounts()
 
   if (isLoading) return <p>Se încarcă...</p>
+  if (isError) return <p style={{ color: '#e74c3c' }}>Eroare la încărcarea conturilor. Verifică că serverul rulează.</p>
 
   const hasAny = accounts && Object.values(accounts).some(l => l.length > 0)
 
