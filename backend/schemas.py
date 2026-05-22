@@ -5,6 +5,28 @@ from pydantic import BaseModel, ConfigDict
 from backend.models import AccountType, TransactionType
 
 
+# ── Deposits ───────────────────────────────────────────────
+
+
+class DepositIn(BaseModel):
+    name: Optional[str] = None
+    bank_name: str
+    amount: Decimal
+    currency: str = "RON"
+    interest_rate: Decimal
+    start_date: date
+    maturity_date: date
+
+
+class DepositOut(DepositIn):
+    id: int
+    created_at: datetime
+    interest_earned: Decimal
+    total_at_maturity: Decimal
+    days_remaining: int
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ── Bank / Connection ──────────────────────────────────────
 
 class BankOut(BaseModel):
@@ -77,6 +99,7 @@ class TransactionOut(BaseModel):
     booking_date: date
     value_date: Optional[date]
     transaction_type: TransactionType
+    bank_name: str = ""
 
     model_config = ConfigDict(from_attributes=True)
 

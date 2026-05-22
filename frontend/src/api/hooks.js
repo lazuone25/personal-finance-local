@@ -79,3 +79,31 @@ export function useManualSync() {
     },
   })
 }
+
+export function useDeposits() {
+  return useQuery({ queryKey: ['deposits'], queryFn: () => api.get('/deposits').then(r => r.data) })
+}
+
+export function useCreateDeposit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => api.post('/deposits', data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['deposits'] }),
+  })
+}
+
+export function useUpdateDeposit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }) => api.put(`/deposits/${id}`, data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['deposits'] }),
+  })
+}
+
+export function useDeleteDeposit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/deposits/${id}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['deposits'] }),
+  })
+}

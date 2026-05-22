@@ -1,5 +1,6 @@
 import { useAccounts, useTransactions, useSyncStatus } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
+import { getBankColor } from '../utils/bankColors'
 
 const ALL_TYPES = ['checking', 'card', 'savings', 'deposit', 'other']
 
@@ -32,15 +33,15 @@ function groupByBank(accounts) {
 }
 
 const CURRENCY_COLORS = {
-  RON: '#3498db',
-  EUR: '#2ecc71',
-  USD: '#f39c12',
-  GBP: '#e67e22',
-  CHF: '#9b59b6',
+  RON: '#3B82F6',
+  EUR: '#10B981',
+  USD: '#F59E0B',
+  GBP: '#8B5CF6',
+  CHF: '#06B6D4',
 }
 
 function currencyColor(currency) {
-  return CURRENCY_COLORS[currency] || '#888'
+  return CURRENCY_COLORS[currency] || '#64748B'
 }
 
 export default function Dashboard() {
@@ -48,8 +49,8 @@ export default function Dashboard() {
   const { data: transactions = [] } = useTransactions()
   const { data: syncStatus } = useSyncStatus()
 
-  if (isLoading) return <p>Se încarcă...</p>
-  if (isError) return <p style={{ color: '#e74c3c' }}>Eroare la încărcarea datelor. Verifică că serverul rulează.</p>
+  if (isLoading) return <p style={{ color: '#64748B' }}>Se încarcă...</p>
+  if (isError) return <p style={{ color: '#EF4444' }}>Eroare la încărcarea datelor. Verifică că serverul rulează.</p>
 
   const byCurrency = groupByCurrency(accounts)
   const currencyEntries = Object.entries(byCurrency).filter(([, amount]) => amount > 0)
@@ -60,9 +61,9 @@ export default function Dashboard() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1>Dashboard</h1>
+        <h1 style={{ margin: 0 }}>Dashboard</h1>
         {syncStatus?.last_sync && (
-          <span style={{ color: '#888', fontSize: '0.85rem' }}>
+          <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>
             Sync: {new Date(syncStatus.last_sync).toLocaleString('ro-RO')}
           </span>
         )}
@@ -71,7 +72,7 @@ export default function Dashboard() {
       {/* Total per currency */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         {currencyEntries.length === 0 ? (
-          <p style={{ color: '#666', gridColumn: '1 / -1' }}>Niciun cont cu sold. Conectează o bancă din Setări.</p>
+          <p style={{ color: '#64748B', gridColumn: '1 / -1' }}>Niciun cont cu sold. Conectează o bancă din Setări.</p>
         ) : (
           currencyEntries.map(([currency, amount]) => (
             <SummaryCard
@@ -88,16 +89,14 @@ export default function Dashboard() {
       {/* Per-bank breakdown */}
       {bankEntries.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '0.85rem', color: '#999', textTransform: 'uppercase', letterSpacing: 1, marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', fontWeight: 700 }}>
             Per bancă
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             {bankEntries.map(([bankName, currencies]) => {
               const currList = Object.entries(currencies).filter(([, a]) => a > 0)
               if (currList.length === 0) return null
-              // Primary currency for color (first by amount)
-              const primaryCurrency = currList.sort((a, b) => b[1] - a[1])[0][0]
-              // Format multi-currency label
+              const bankColor = getBankColor(bankName)
               const subtitle = currList
                 .map(([c, a]) => `${a.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} ${c}`)
                 .join(' · ')
@@ -105,13 +104,23 @@ export default function Dashboard() {
               return (
                 <div key={bankName} style={{
                   background: '#fff',
-                  borderRadius: 8,
-                  padding: '1.25rem',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                  borderLeft: `4px solid ${currencyColor(primaryCurrency)}`,
+                  borderRadius: 12,
+                  padding: '1.25rem 1.5rem',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                  borderLeft: `4px solid ${bankColor}`,
                 }}>
-                  <p style={{ fontWeight: 700, marginBottom: '0.4rem', fontSize: '1rem' }}>{bankName}</p>
-                  <p style={{ color: '#555', fontSize: '0.9rem', lineHeight: 1.6 }}>{subtitle}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <span style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: bankColor,
+                      flexShrink: 0,
+                      display: 'inline-block',
+                    }} />
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>{bankName}</p>
+                  </div>
+                  <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.6 }}>{subtitle}</p>
                 </div>
               )
             })}
@@ -119,32 +128,65 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Recent transactions */}
       <section>
-        <h2>Tranzacții recente</h2>
+        <h2 style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', fontWeight: 700 }}>
+          Tranzacții recente
+        </h2>
         {recent.length === 0 ? (
-          <p style={{ color: '#666' }}>Nicio tranzacție. Conectează o bancă din Setări.</p>
+          <p style={{ color: '#64748B' }}>Nicio tranzacție. Conectează o bancă din Setări.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
-            <thead style={{ background: '#f8f8f8' }}>
-              <tr>
-                {['Data', 'Descriere', 'Sumă', 'Tip'].map(h => (
-                  <th key={h} style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600, fontSize: '0.85rem', color: '#555' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map(tx => (
-                <tr key={tx.id} style={{ borderTop: '1px solid #eee' }}>
-                  <td style={{ padding: '0.75rem', fontSize: '0.9rem' }}>{tx.booking_date}</td>
-                  <td style={{ padding: '0.75rem', fontSize: '0.9rem' }}>{tx.description || '—'}</td>
-                  <td style={{ padding: '0.75rem', fontWeight: 600, color: tx.transaction_type === 'credit' ? '#2ecc71' : '#e74c3c' }}>
-                    {tx.transaction_type === 'debit' ? '-' : '+'}{parseFloat(tx.amount).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} {tx.currency}
-                  </td>
-                  <td style={{ padding: '0.75rem', fontSize: '0.85rem', color: '#888' }}>{tx.transaction_type}</td>
+          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                  {['Data', 'Descriere', 'Sumă', 'Tip'].map(h => (
+                    <th key={h} style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      color: '#64748B',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recent.map(tx => (
+                  <tr key={tx.id} style={{ borderTop: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#475569' }}>{tx.booking_date}</td>
+                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#1E293B' }}>{tx.description || '—'}</td>
+                    <td style={{
+                      padding: '0.75rem 1rem',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      color: tx.transaction_type === 'credit' ? '#10B981' : '#EF4444',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {tx.transaction_type === 'debit' ? '−' : '+'}
+                      {parseFloat(tx.amount).toLocaleString('ro-RO', { minimumFractionDigits: 2 })}
+                      <span style={{ fontSize: '0.8rem', fontWeight: 400, color: '#94A3B8', marginLeft: '0.3rem' }}>{tx.currency}</span>
+                    </td>
+                    <td style={{ padding: '0.75rem 1rem' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: 20,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: tx.transaction_type === 'credit' ? '#D1FAE5' : '#FEE2E2',
+                        color: tx.transaction_type === 'credit' ? '#065F46' : '#991B1B',
+                      }}>
+                        {tx.transaction_type}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>

@@ -78,3 +78,16 @@ class Transaction(Base):
     transaction_type = Column(SAEnum(TransactionType), nullable=False)
 
     account = relationship("Account", back_populates="transactions")
+
+
+class Deposit(Base):
+    __tablename__ = "deposits"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=True)
+    bank_name = Column(String, nullable=False)
+    amount = Column(Numeric(15, 2), nullable=False)
+    currency = Column(String, nullable=False, default="RON")
+    interest_rate = Column(Numeric(6, 4), nullable=False)
+    start_date = Column(Date, nullable=False)
+    maturity_date = Column(Date, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

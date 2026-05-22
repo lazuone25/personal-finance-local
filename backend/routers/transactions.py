@@ -36,7 +36,12 @@ def get_transactions(
     if transaction_type:
         q = q.filter(Transaction.transaction_type == transaction_type)
     txs = q.order_by(Transaction.booking_date.desc()).all()
-    return {"transactions": [TransactionOut.model_validate(t) for t in txs]}
+    result = []
+    for t in txs:
+        out = TransactionOut.model_validate(t)
+        out.bank_name = t.account.bank_connection.bank_name if t.account and t.account.bank_connection else ""
+        result.append(out)
+    return {"transactions": result}
 
 
 @router.get("/accounts/{account_id}/transactions")
@@ -55,4 +60,9 @@ def get_account_transactions(
     if date_to:
         q = q.filter(Transaction.booking_date <= date_to)
     txs = q.order_by(Transaction.booking_date.desc()).all()
-    return {"transactions": [TransactionOut.model_validate(t) for t in txs]}
+    result = []
+    for t in txs:
+        out = TransactionOut.model_validate(t)
+        out.bank_name = t.account.bank_connection.bank_name if t.account and t.account.bank_connection else ""
+        result.append(out)
+    return {"transactions": result}
