@@ -1,21 +1,43 @@
 import { useAccounts, useTransactions, useSyncStatus } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 
-function sumByType(accounts, type) {
-  return (accounts?.[type] || []).reduce((sum, a) => sum + parseFloat(a.balance?.amount || 0), 0)
+function groupByCurrency(accounts) {
+  const all = ['checking', 'card', 'savings', 'deposit', 'other']
+    .flatMap(t => accounts?.[t] || [])
+
+  const grouped = {}
+  for (const acc of all) {
+    const currency = acc.balance?.currency || acc.currency
+    if (!currency) continue
+    const amount = parseFloat(acc.balance?.amount || 0)
+    if (!grouped[currency]) grouped[currency] = 0
+    grouped[currency] += amount
+  }
+  return grouped
+}
+
+const CURRENCY_COLORS = {
+  RON: '#3498db',
+  EUR: '#2ecc71',
+  USD: '#f39c12',
+  GBP: '#e67e22',
+  CHF: '#9b59b6',
+}
+
+function currencyColor(currency) {
+  return CURRENCY_COLORS[currency] || '#888'
 }
 
 export default function Dashboard() {
-  const { data: accounts, isLoading } = useAccounts()
+  const { data: accounts, isLoading, isError } = useAccounts()
   const { data: transactions = [] } = useTransactions()
   const { data: syncStatus } = useSyncStatus()
 
   if (isLoading) return <p>Se încarcă...</p>
+  if (isError) return <p style={{ color: '#e74c3c' }}>Eroare la încărcarea datelor. Verifică că serverul rulează.</p>
 
-  const checking = sumByType(accounts, 'checking')
-  const card = sumByType(accounts, 'card')
-  const savings = sumByType(accounts, 'savings')
-  const deposit = sumByType(accounts, 'deposit')
+  const byCurrency = groupByCurrency(accounts)
+  const currencyEntries = Object.entries(byCurrency).filter(([, amount]) => amount > 0)
   const recent = transactions.slice(0, 10)
 
   return (
@@ -30,10 +52,19 @@ export default function Dashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        <SummaryCard title="Card / Cont curent" amount={checking + card} color="#3498db" />
-        <SummaryCard title="Economii (Savings)" amount={savings} color="#2ecc71" />
-        <SummaryCard title="Depozite" amount={deposit} color="#f39c12" />
-        <SummaryCard title="Total" amount={checking + card + savings + deposit} color="#9b59b6" />
+        {currencyEntries.length === 0 ? (
+          <p style={{ color: '#666', gridColumn: '1 / -1' }}>Niciun cont cu sold. Conectează o bancă din Setări.</p>
+        ) : (
+          currencyEntries.map(([currency, amount]) => (
+            <SummaryCard
+              key={currency}
+              title={currency}
+              amount={amount}
+              currency={currency}
+              color={currencyColor(currency)}
+            />
+          ))
+        )}
       </div>
 
       <section>
