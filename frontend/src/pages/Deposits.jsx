@@ -23,6 +23,114 @@ function formatAmount(val) {
   return parseFloat(val).toLocaleString('ro-RO', { minimumFractionDigits: 2 })
 }
 
+const inputStyle = {
+  padding: '0.5rem 0.75rem',
+  border: '1px solid #E2E8F0',
+  borderRadius: 8,
+  fontSize: '0.875rem',
+  color: '#1E293B',
+  background: '#fff',
+  outline: 'none',
+  fontFamily: 'inherit',
+  width: '100%',
+  boxSizing: 'border-box',
+}
+
+// Definit AFARĂ din Deposits — altfel React îl re-creează la fiecare render și inputurile pierd focus
+function DepositFormFields({ values, onChange }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Bancă *
+        </label>
+        <input
+          required
+          value={values.bank_name}
+          onChange={e => onChange('bank_name', e.target.value)}
+          placeholder="ex: ING, Raiffeisen"
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Sumă *
+        </label>
+        <input
+          required
+          type="number"
+          min="0"
+          step="0.01"
+          value={values.amount}
+          onChange={e => onChange('amount', e.target.value)}
+          placeholder="10000"
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Monedă
+        </label>
+        <select value={values.currency} onChange={e => onChange('currency', e.target.value)} style={inputStyle}>
+          <option value="RON">RON</option>
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Rată anuală % *
+        </label>
+        <input
+          required
+          type="number"
+          min="0"
+          step="0.01"
+          value={values.interest_rate}
+          onChange={e => onChange('interest_rate', e.target.value)}
+          placeholder="6.5"
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Data start *
+        </label>
+        <input
+          required
+          type="date"
+          value={values.start_date}
+          onChange={e => onChange('start_date', e.target.value)}
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Data scadență *
+        </label>
+        <input
+          required
+          type="date"
+          value={values.maturity_date}
+          onChange={e => onChange('maturity_date', e.target.value)}
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Etichetă (opțional)
+        </label>
+        <input
+          value={values.name}
+          onChange={e => onChange('name', e.target.value)}
+          placeholder="ex: Depozit 6 luni"
+          style={inputStyle}
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function Deposits() {
   const { data: deposits = [], isLoading, isError } = useDeposits()
   const createMutation = useCreateDeposit()
@@ -71,18 +179,6 @@ export default function Deposits() {
     }
   }
 
-  const inputStyle = {
-    padding: '0.5rem 0.75rem',
-    border: '1px solid #E2E8F0',
-    borderRadius: 8,
-    fontSize: '0.875rem',
-    color: '#1E293B',
-    background: '#fff',
-    outline: 'none',
-    fontFamily: 'inherit',
-    width: '100%',
-  }
-
   const btnPrimary = {
     padding: '0.5rem 1.2rem',
     background: '#3B82F6',
@@ -118,100 +214,6 @@ export default function Deposits() {
     fontWeight: 600,
     fontFamily: 'inherit',
   }
-
-  const DepositFormFields = ({ values, onChange }) => (
-    <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Bancă *
-          </label>
-          <input
-            required
-            value={values.bank_name}
-            onChange={e => onChange('bank_name', e.target.value)}
-            placeholder="ex: ING, Raiffeisen"
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Sumă *
-          </label>
-          <input
-            required
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.amount}
-            onChange={e => onChange('amount', e.target.value)}
-            placeholder="10000"
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Monedă
-          </label>
-          <select value={values.currency} onChange={e => onChange('currency', e.target.value)} style={inputStyle}>
-            <option value="RON">RON</option>
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Rată anuală % *
-          </label>
-          <input
-            required
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.interest_rate}
-            onChange={e => onChange('interest_rate', e.target.value)}
-            placeholder="6.5"
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Data start *
-          </label>
-          <input
-            required
-            type="date"
-            value={values.start_date}
-            onChange={e => onChange('start_date', e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Data scadență *
-          </label>
-          <input
-            required
-            type="date"
-            value={values.maturity_date}
-            onChange={e => onChange('maturity_date', e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Etichetă (opțional)
-          </label>
-          <input
-            value={values.name}
-            onChange={e => onChange('name', e.target.value)}
-            placeholder="ex: Depozit 6 luni"
-            style={inputStyle}
-          />
-        </div>
-      </div>
-    </>
-  )
 
   if (isLoading) return <p style={{ color: '#64748B' }}>Se încarcă...</p>
   if (isError) return <p style={{ color: '#EF4444' }}>Eroare la încărcarea depozitelor.</p>
