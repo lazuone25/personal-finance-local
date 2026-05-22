@@ -284,7 +284,7 @@ export default function Deposits() {
         </div>
       )}
 
-      {/* Deposits table */}
+      {/* Deposits card grid */}
       {deposits.length === 0 && !showForm ? (
         <div style={{
           background: '#fff',
@@ -298,134 +298,81 @@ export default function Deposits() {
           <p style={{ fontSize: '0.875rem' }}>Apasă „+ Adaugă depozit" pentru a înregistra primul depozit.</p>
         </div>
       ) : deposits.length > 0 && (
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
-            <thead>
-              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                {['Bancă', 'Sumă inițială', 'Monedă', 'Rată', 'Perioadă', 'Dobândă acumulată', 'Total la scadență', 'Zile rămase', 'Acțiuni'].map(h => (
-                  <th key={h} style={{
-                    padding: '0.75rem 1rem',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    fontSize: '0.72rem',
-                    color: '#64748B',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    whiteSpace: 'nowrap',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedDeposits.map(d => {
-                const bankColor = getBankColor(d.bank_name)
-                const dColor = daysColor(d.days_remaining)
-                if (editId === d.id && editForm) {
-                  return (
-                    <tr key={d.id} style={{ background: '#EFF6FF', borderTop: '1px solid #E2E8F0' }}>
-                      <td colSpan={9} style={{ padding: '1rem 1.5rem' }}>
-                        <form onSubmit={handleEditSave}>
-                          <DepositFormFields
-                            values={editForm}
-                            onChange={(k, v) => setEditForm(prev => ({ ...prev, [k]: v }))}
-                          />
-                          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem' }}>
-                            <button type="submit" style={btnPrimary} disabled={updateMutation.isPending}>
-                              {updateMutation.isPending ? 'Se salvează...' : 'Salvează'}
-                            </button>
-                            <button type="button" onClick={() => { setEditId(null); setEditForm(null) }} style={btnSecondary}>
-                              Anulează
-                            </button>
-                          </div>
-                        </form>
-                      </td>
-                    </tr>
-                  )
-                }
-                return (
-                  <tr key={d.id} style={{ borderTop: '1px solid #F1F5F9' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ padding: '0.75rem 1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          background: bankColor,
-                          flexShrink: 0,
-                          display: 'inline-block',
-                        }} />
-                        <div>
-                          <p style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0F172A', marginBottom: '0.1rem' }}>{d.bank_name}</p>
-                          {d.name && <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{d.name}</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 600, fontSize: '0.875rem', color: '#0F172A' }}>
-                      {formatAmount(d.amount)}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#475569' }}>
-                      {d.currency}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#475569' }}>
-                      {parseFloat(d.interest_rate).toFixed(2)}%
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#64748B', whiteSpace: 'nowrap' }}>
-                      {d.start_date} → {d.maturity_date}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 600, fontSize: '0.875rem', color: '#10B981' }}>
-                      +{formatAmount(d.interest_earned)}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 700, fontSize: '0.875rem', color: '#0F172A' }}>
-                      {formatAmount(d.total_at_maturity)}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: 20,
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        background: dColor + '22',
-                        color: dColor,
-                      }}>
-                        {d.days_remaining}z
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          onClick={() => {
-                            setEditId(d.id)
-                            setEditForm({
-                              bank_name: d.bank_name,
-                              amount: d.amount,
-                              currency: d.currency,
-                              interest_rate: d.interest_rate,
-                              start_date: d.start_date,
-                              maturity_date: d.maturity_date,
-                              name: d.name || '',
-                            })
-                            setShowForm(false)
-                          }}
-                          style={btnSecondary}
-                        >
-                          Editează
-                        </button>
-                        <button onClick={() => handleDelete(d.id)} style={btnDanger}>
-                          Șterge
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+          {sortedDeposits.map(d => {
+            if (editId === d.id && editForm) {
+              return (
+                <div key={d.id} style={{ background: '#EFF6FF', borderRadius: 12, padding: '1.25rem 1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #3B82F6' }}>
+                  <h3 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#0F172A' }}>Editează depozit</h3>
+                  <form onSubmit={handleEditSave}>
+                    <DepositFormFields values={editForm} onChange={(k, v) => setEditForm(prev => ({ ...prev, [k]: v }))} />
+                    <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem' }}>
+                      <button type="submit" style={btnPrimary} disabled={updateMutation.isPending}>{updateMutation.isPending ? 'Se salvează...' : 'Salvează'}</button>
+                      <button type="button" onClick={() => { setEditId(null); setEditForm(null) }} style={btnSecondary}>Anulează</button>
+                    </div>
+                  </form>
+                </div>
+              )
+            }
+            return (
+              <div key={d.id} style={{
+                background: '#fff',
+                borderRadius: 12,
+                padding: '1.25rem 1.5rem',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                borderLeft: `4px solid ${getBankColor(d.bank_name)}`,
+              }}>
+                {/* Top row: bank dot + name + label, and days badge top-right */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: getBankColor(d.bank_name), flexShrink: 0, display: 'inline-block' }} />
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', margin: 0 }}>{d.bank_name}</p>
+                      {d.name && <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0 }}>{d.name}</p>}
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: 20,
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    background: daysColor(d.days_remaining) + '22',
+                    color: daysColor(d.days_remaining),
+                  }}>
+                    {d.days_remaining}z
+                  </span>
+                </div>
+
+                {/* Amount row */}
+                <p style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: '0 0 0.25rem' }}>
+                  {formatAmount(d.amount)} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8' }}>{d.currency}</span>
+                </p>
+
+                {/* Period + rate */}
+                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 0.75rem' }}>
+                  {d.start_date} → {d.maturity_date} · <strong>{parseFloat(d.interest_rate).toFixed(2)}%</strong>/an
+                </p>
+
+                {/* Interest + total */}
+                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.15rem' }}>Dobândă</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10B981', margin: 0 }}>+{formatAmount(d.interest_earned)}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.15rem' }}>Total scadență</p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>{formatAmount(d.total_at_maturity)}</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => { setEditId(d.id); setEditForm({ bank_name: d.bank_name, amount: d.amount, currency: d.currency, interest_rate: d.interest_rate, start_date: d.start_date, maturity_date: d.maturity_date, name: d.name || '' }); setShowForm(false) }} style={btnSecondary}>Editează</button>
+                  <button onClick={() => handleDelete(d.id)} style={btnDanger}>Șterge</button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
