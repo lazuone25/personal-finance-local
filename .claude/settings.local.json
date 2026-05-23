@@ -4,7 +4,8 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(Get-ChildItem C:projectsmoneytracking *)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "mcp__claude_ai_Gmail__search_threads"
     ]
   }
 }

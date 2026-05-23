@@ -36,28 +36,57 @@ def update_extra(data: dict):
     save_data(data)
     return data
 
+NAMED_SUBS = {'bani_personali', 'alocatie_ema'}
+REVOLUT_ACCOUNTS = {'revolut_personal', 'revolut_comun'}
+
+def apply_transfer(data, source_id, dest_id, amount, reverse=False):
+    src_delta = amount if reverse else -amount      # normal: scade sursa; reverse: adauga inapoi
+    dst_delta = -amount if reverse else amount      # normal: creste dest; reverse: scade inapoi
+    mb_delta  = amount if reverse else -amount      # normal: scade main_balance; reverse: adauga inapoi
+
+    if source_id in NAMED_SUBS:
+        data["sub_accounts"] = [
+            {**s, "amount": round(s["amount"] + src_delta, 2)} if s["id"] == source_id else s
+            for s in data["sub_accounts"]
+        ]
+
+    if source_id in REVOLUT_ACCOUNTS:
+        # Bani intră în economii → main_balance crește
+        data["main_balance"] = round(data["main_balance"] - mb_delta, 2)
+
+    if dest_id in NAMED_SUBS:
+        data["sub_accounts"] = [
+            {**s, "amount": round(s["amount"] + dst_delta, 2)} if s["id"] == dest_id else s
+            for s in data["sub_accounts"]
+        ]
+
+    if dest_id in REVOLUT_ACCOUNTS:
+        data["main_balance"] = round(data["main_balance"] + mb_delta, 2)
+
+    return data
+
+
 @router.post("/extra/transfer")
 def add_transfer(transfer: dict):
+    import uuid
+    from datetime import datetime
+
     data = load_data()
     if "transfers" not in data:
         data["transfers"] = []
 
-    import uuid
-    from datetime import datetime
     transfer["id"] = str(uuid.uuid4())
     transfer["date"] = datetime.now().strftime("%Y-%m-%d")
 
-    # Deduct from sub-account
-    sub_id = transfer.get("sub_account_id")
+    source_id = transfer.get("source_id", "")
+    dest_id = transfer.get("dest_id", "")
     amount = float(transfer.get("amount", 0))
-    data["sub_accounts"] = [
-        {**s, "amount": round(s["amount"] - amount, 2)} if s["id"] == sub_id else s
-        for s in data["sub_accounts"]
-    ]
 
-    data["transfers"].insert(0, transfer)  # newest first
+    data = apply_transfer(data, source_id, dest_id, amount)
+    data["transfers"].insert(0, transfer)
     save_data(data)
     return data
+
 
 @router.delete("/extra/transfer/{transfer_id}")
 def delete_transfer(transfer_id: str):
@@ -65,16 +94,12 @@ def delete_transfer(transfer_id: str):
     if "transfers" not in data:
         data["transfers"] = []
 
-    # Find transfer to reverse
     tx = next((t for t in data["transfers"] if t["id"] == transfer_id), None)
     if tx:
-        # Restore sub-account amount
-        sub_id = tx.get("sub_account_id")
+        source_id = tx.get("source_id", "")
+        dest_id = tx.get("dest_id", "")
         amount = float(tx.get("amount", 0))
-        data["sub_accounts"] = [
-            {**s, "amount": round(s["amount"] + amount, 2)} if s["id"] == sub_id else s
-            for s in data["sub_accounts"]
-        ]
+        data = apply_transfer(data, source_id, dest_id, amount, reverse=True)
         data["transfers"] = [t for t in data["transfers"] if t["id"] != transfer_id]
 
     save_data(data)

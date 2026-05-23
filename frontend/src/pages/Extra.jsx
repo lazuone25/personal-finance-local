@@ -45,35 +45,69 @@ function EditableAmount({ value, onSave, fontSize = '1.5rem', color = '#0F172A' 
   )
 }
 
-function TransferForm({ subAccounts, currency, onSave, onCancel }) {
+const SUB_ACCOUNT_OPTIONS = [
+  { id: 'bani_personali', name: 'BANI PERSONALI' },
+  { id: 'alocatie_ema', name: 'ALOCATIE EMA' },
+  { id: 'fonduri_nefolosite', name: 'FONDURI NEFOLOSITE' },
+]
+
+const REVOLUT_OPTIONS = [
+  { id: 'revolut_personal', name: 'Revolut Personal' },
+  { id: 'revolut_comun', name: 'Revolut Comun' },
+]
+
+const SOURCE_OPTIONS = [...SUB_ACCOUNT_OPTIONS, ...REVOLUT_OPTIONS]
+const DEST_OPTIONS   = [...SUB_ACCOUNT_OPTIONS, ...REVOLUT_OPTIONS]
+
+function getAccountName(id) {
+  return [...SOURCE_OPTIONS, ...DEST_OPTIONS].find(o => o.id === id)?.name || id
+}
+
+function TransferForm({ currency, onSave, onCancel }) {
   const [amount, setAmount] = useState('')
-  const [subAccountId, setSubAccountId] = useState(subAccounts[0]?.id || '')
+  const [sourceId, setSourceId] = useState('bani_personali')
+  const [destId, setDestId] = useState('revolut_personal')
   const [note, setNote] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    if (sourceId === destId) return
     const n = parseFloat(amount.replace(',', '.'))
     if (!n || n <= 0) return
-    onSave({ amount: n, sub_account_id: subAccountId, note })
+    onSave({ amount: n, source_id: sourceId, dest_id: destId, note })
   }
 
   const inputStyle = {
     padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #E2E8F0',
-    fontSize: '0.875rem', outline: 'none', width: '100%', boxSizing: 'border-box'
+    fontSize: '0.875rem', outline: 'none', width: '100%', boxSizing: 'border-box',
+    background: '#fff'
   }
 
   return (
     <form onSubmit={handleSubmit} style={{ background: '#F8FAFC', borderRadius: 10, padding: '1rem 1.25rem', border: '1px solid #E2E8F0', marginBottom: '0.75rem' }}>
-      <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0F172A', margin: '0 0 0.75rem' }}>Transfer din Economii → Personal</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+      <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0F172A', margin: '0 0 0.75rem' }}>Înregistrează transfer</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
         <div>
           <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.25rem' }}>Sumă ({currency})</label>
           <input autoFocus type="text" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="500" style={inputStyle} required />
         </div>
         <div>
-          <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.25rem' }}>Din sub-cont</label>
-          <select value={subAccountId} onChange={e => setSubAccountId(e.target.value)} style={inputStyle}>
-            {subAccounts.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.25rem' }}>Din contul</label>
+          <select value={sourceId} onChange={e => {
+            const newSrc = e.target.value
+            setSourceId(newSrc)
+            if (destId === newSrc) {
+              const first = DEST_OPTIONS.find(o => o.id !== newSrc)
+              if (first) setDestId(first.id)
+            }
+          }} style={inputStyle}>
+            {SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.25rem' }}>În contul</label>
+          <select value={destId} onChange={e => setDestId(e.target.value)} style={inputStyle}>
+            {DEST_OPTIONS.filter(o => o.id !== sourceId).map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
         </div>
       </div>
@@ -184,7 +218,6 @@ export default function Extra() {
 
       {showForm && (
         <TransferForm
-          subAccounts={editableSubs}
           currency={data.currency}
           onSave={(t) => { addTransfer.mutate(t); setShowForm(false) }}
           onCancel={() => setShowForm(false)}
@@ -195,26 +228,21 @@ export default function Extra() {
         <p style={{ color: '#94A3B8', fontSize: '0.875rem', margin: 0 }}>Niciun transfer înregistrat.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          {(data.transfers || []).map(tx => {
-            const sub = data.sub_accounts.find(s => s.id === tx.sub_account_id)
-            return (
-              <div key={tx.id} style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: '0.8rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#0F172A', fontWeight: 500 }}>
-                    Economii → Personal
-                    {tx.note && <span style={{ color: '#64748B', fontWeight: 400 }}> · {tx.note}</span>}
-                  </p>
-                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>
-                    {tx.date} · din {sub?.name || tx.sub_account_id}
-                  </p>
-                </div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#EF4444', whiteSpace: 'nowrap' }}>
-                  -{formatAmt(tx.amount)} {data.currency}
+          {(data.transfers || []).map(tx => (
+            <div key={tx.id} style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: '0.8rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#0F172A', fontWeight: 500 }}>
+                  {getAccountName(tx.source_id)} → {getAccountName(tx.dest_id)}
+                  {tx.note && <span style={{ color: '#64748B', fontWeight: 400 }}> · {tx.note}</span>}
                 </p>
-                <button onClick={() => deleteTransfer.mutate(tx.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }} title="Șterge">✕</button>
+                <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>{tx.date}</p>
               </div>
-            )
-          })}
+              <p style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#64748B', whiteSpace: 'nowrap' }}>
+                {formatAmt(tx.amount)} {data.currency}
+              </p>
+              <button onClick={() => deleteTransfer.mutate(tx.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }} title="Șterge">✕</button>
+            </div>
+          ))}
         </div>
       )}
 
