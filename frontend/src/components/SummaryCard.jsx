@@ -11,11 +11,13 @@ export default function SummaryCard({ title, amount, currency = 'RON', color = '
       <p style={{ color: '#64748B', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {title}
       </p>
-      <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.2, marginBottom: subtitle ? '0.25rem' : 0 }}>
+      <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.2 }}>
         {(isFinite(amount) ? amount : 0).toLocaleString('ro-RO', { minimumFractionDigits: 2 })}
         <span style={{ fontSize: '0.9rem', fontWeight: 500, color, marginLeft: '0.3rem' }}>{currency}</span>
-        {extra && <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8', marginLeft: '0.3rem' }}>{extra}</span>}
       </p>
+      {extra && (
+        <p style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8', marginTop: '0.15rem' }}>{extra}</p>
+      )}
       {subtitle && (
         <p style={{ color: '#94A3B8', fontSize: '0.8rem', marginTop: '0.25rem' }}>{subtitle}</p>
       )}
