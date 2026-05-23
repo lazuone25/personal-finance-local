@@ -1,4 +1,4 @@
-import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates } from '../api/hooks'
+import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates, useXtbPortfolio, useExtra } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 import { getBankColor } from '../utils/bankColors'
 
@@ -36,6 +36,8 @@ function groupByConnection(accounts) {
     if (acc.bank_name === 'Revolut' && acc.name?.includes('&')) {
       label = 'Revolut (comun)'
     }
+    // Hide USD for Revolut (unused)
+    if (acc.bank_name === 'Revolut' && currency === 'USD') continue
     if (!groups[label]) groups[label] = {}
     if (!groups[label][currency]) groups[label][currency] = 0
     groups[label][currency] += amount
@@ -61,6 +63,12 @@ export default function Dashboard() {
   const { data: syncStatus } = useSyncStatus()
   const { data: deposits = [] } = useDeposits()
   const { data: rates = {} } = useRates()
+  const { data: xtbData } = useXtbPortfolio()
+  const { data: extraData } = useExtra()
+  const extraTotal = extraData?.main_balance || 0
+  const xtbEquity = xtbData?.configured ? (xtbData.equity || 0) : 0
+  const tradevilleTotal = 0  // placeholder until Tradeville is integrated
+  const investitiiEur = xtbEquity + tradevilleTotal
 
   if (isLoading) return <p style={{ color: '#64748B' }}>Se încarcă...</p>
   if (isError) return <p style={{ color: '#EF4444' }}>Eroare la încărcarea datelor. Verifică că serverul rulează.</p>
@@ -70,6 +78,7 @@ export default function Dashboard() {
   const recent = transactions.slice(0, 10)
 
   const depositRonTotal = deposits.filter(d => d.currency === 'RON').reduce((s, d) => s + parseFloat(d.amount), 0)
+  const dobanzaTotalaRon = deposits.filter(d => d.currency === 'RON').reduce((s, d) => s + (parseFloat(d.total_at_maturity) - parseFloat(d.amount)), 0)
 
   return (
     <div>
@@ -105,12 +114,20 @@ export default function Dashboard() {
           amount={depositRonTotal}
           currency="RON"
           color="#8B5CF6"
-          extra={toEur(depositRonTotal, rates)}
+          extra={toEur(depositRonTotal, rates) ? (
+            <span>{toEur(depositRonTotal, rates)} <span style={{ color: '#10B981', fontWeight: 600 }}>+{Math.round(dobanzaTotalaRon).toLocaleString('ro-RO')} RON</span></span>
+          ) : null}
         />
-        {/* INVESTIȚII — static 0 */}
-        <SummaryCard title="Investiții" amount={0} currency="RON" color="#F59E0B" />
+        {/* INVESTIȚII — real totals */}
+        <SummaryCard
+          title="Investiții"
+          amount={investitiiEur}
+          currency="EUR"
+          color="#F59E0B"
+          extra={investitiiEur > 0 && rates ? '(' + Math.round(investitiiEur * (rates['EUR'] || 1)).toLocaleString('ro-RO') + ' RON)' : null}
+        />
         {/* EXTRA — static 0 */}
-        <SummaryCard title="Extra" amount={0} currency="RON" color="#06B6D4" />
+        <SummaryCard title="Extra" amount={extraTotal} currency="RON" color="#06B6D4" extra={toEur(extraTotal, rates)} />
       </div>
 
       {/* Per bancă */}

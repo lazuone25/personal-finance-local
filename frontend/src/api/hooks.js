@@ -115,3 +115,26 @@ export function useRates() {
     staleTime: 60 * 60 * 1000, // 1 hour — BNR rates change once daily
   })
 }
+
+export function useXtbPortfolio() {
+  return useQuery({
+    queryKey: ['xtb-portfolio'],
+    queryFn: () => api.get('/xtb/portfolio').then(r => r.data),
+    refetchInterval: 5 * 60 * 1000,
+  })
+}
+
+export function useExtra() {
+  return useQuery({
+    queryKey: ['extra'],
+    queryFn: () => api.get('/extra').then(r => r.data),
+  })
+}
+
+export function useUpdateExtra() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => api.post('/extra', data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
+  })
+}
