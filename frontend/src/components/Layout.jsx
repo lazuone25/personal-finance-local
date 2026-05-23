@@ -4,6 +4,7 @@ const navItems = [
   { to: '/', label: 'DASHBOARD' },
   { to: '/accounts', label: 'CONTURI' },
   { to: '/extra', label: 'EXTRA' },
+  { to: '/investitii', label: 'INVESTIȚII' },
   { to: '/deposits', label: 'DEPOZITE' },
   { to: '/transactions', label: 'TRANZACȚII' },
   { to: '/settings', label: 'SETĂRI' },
