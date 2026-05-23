@@ -2,6 +2,52 @@ import { useState } from 'react'
 import { useTransactions, useConnections } from '../api/hooks'
 import { getBankColor } from '../utils/bankColors'
 
+// Description patterns that indicate internal transfers
+const INTERNAL_PATTERNS = [
+  /^To Economii/i,
+  /^From Economii/i,
+  /^To Cont de economii/i,
+  /^Top-Up by/i,               // Revolut: incoming top-up from own bank card
+  /Revolut\*\*/i,              // Raiffeisen: card payment to Revolut
+  /^To ANDREI ANGHEL/i,        // Revolut: transfer to joint account
+  /^From Andrei/i,             // Revolut: transfer from personal to joint
+  /^From Anca/i,               // Revolut: transfer from joint to personal
+  /^To account,/i,             // ING: transfer to own account
+  /transfer depozit/i,         // Raiffeisen↔ING deposit transfers
+]
+
+function detectInternalTransfers(transactions) {
+  const flagged = new Set()
+
+  // Method 1: description pattern matching
+  for (const tx of transactions) {
+    if (INTERNAL_PATTERNS.some(p => p.test(tx.description || ''))) {
+      flagged.add(tx.id)
+    }
+  }
+
+  // Method 2: cross-account amount matching
+  // If a debit on bank A matches a credit on bank B (same amount to the cent,
+  // same currency, within 3 days) → both are internal transfers
+  for (let i = 0; i < transactions.length; i++) {
+    const a = transactions[i]
+    for (let j = i + 1; j < transactions.length; j++) {
+      const b = transactions[j]
+      if (a.bank_name === b.bank_name) continue             // same bank — skip
+      if (a.currency !== b.currency) continue               // different currency — skip
+      if (a.transaction_type === b.transaction_type) continue // same direction — skip
+      const amtDiff = Math.abs(parseFloat(a.amount) - parseFloat(b.amount))
+      if (amtDiff > 0.01) continue                          // amounts don't match
+      const daysDiff = Math.abs(new Date(a.booking_date) - new Date(b.booking_date)) / 86400000
+      if (daysDiff > 3) continue                            // more than 3 days apart
+      flagged.add(a.id)
+      flagged.add(b.id)
+    }
+  }
+
+  return flagged
+}
+
 function groupByMonth(transactions) {
   const groups = {}
   for (const tx of transactions) {
@@ -26,13 +72,19 @@ export default function Transactions() {
   const [filters, setFilters] = useState({})
   const { data: transactions = [], isLoading } = useTransactions(filters)
   const [collapsed, setCollapsed] = useState({})
+  const [hideInternal, setHideInternal] = useState(false)
 
   const setFilter = (key, value) =>
     setFilters(prev => ({ ...prev, [key]: value || undefined }))
 
   const toggleMonth = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const monthGroups = groupByMonth(transactions)
+  const internalIds = detectInternalTransfers(transactions)
+  const visibleTransactions = hideInternal
+    ? transactions.filter(tx => !internalIds.has(tx.id))
+    : transactions
+  const monthGroups = groupByMonth(visibleTransactions)
+  const allMonthGroups = groupByMonth(transactions)
 
   const inputStyle = {
     padding: '0.5rem 0.75rem',
@@ -80,6 +132,23 @@ export default function Transactions() {
           style={inputStyle}
           title="Până la"
         />
+        <button
+          onClick={() => setHideInternal(v => !v)}
+          style={{
+            padding: '0.5rem 1rem',
+            borderRadius: 8,
+            border: '1px solid ' + (hideInternal ? '#3B82F6' : '#E2E8F0'),
+            background: hideInternal ? '#EFF6FF' : '#fff',
+            color: hideInternal ? '#1D4ED8' : '#64748B',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            marginLeft: 'auto',
+          }}
+        >
+          {hideInternal ? '✓ Fără transferuri interne' : 'Ascunde transferuri interne'}
+        </button>
       </div>
 
       {isLoading ? (
@@ -89,6 +158,8 @@ export default function Transactions() {
       ) : (
         monthGroups.map(([key, txs]) => {
           const isCollapsed = collapsed[key]
+          const allTxsForMonth = (Object.fromEntries(allMonthGroups))[key] || []
+          const hiddenCount = allTxsForMonth.length - txs.length
 
           // Compute month summary: total credit and total debit per currency
           const summary = {}
@@ -122,6 +193,11 @@ export default function Transactions() {
                     {formatMonthLabel(key)}
                   </span>
                   <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{txs.length} tranzacții</span>
+                  {hideInternal && hiddenCount > 0 && (
+                    <span style={{ fontSize: '0.75rem', color: '#F59E0B', marginLeft: '0.5rem' }}>
+                      ({hiddenCount} ascunse)
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {/* Summary: +credit / -debit per currency */}
