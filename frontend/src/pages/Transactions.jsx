@@ -72,7 +72,6 @@ export default function Transactions() {
   const [filters, setFilters] = useState({})
   const { data: transactions = [], isLoading } = useTransactions(filters)
   const [collapsed, setCollapsed] = useState({})
-  const [hideInternal, setHideInternal] = useState(false)
 
   const setFilter = (key, value) =>
     setFilters(prev => ({ ...prev, [key]: value || undefined }))
@@ -80,11 +79,8 @@ export default function Transactions() {
   const toggleMonth = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
   const internalIds = detectInternalTransfers(transactions)
-  const visibleTransactions = hideInternal
-    ? transactions.filter(tx => !internalIds.has(tx.id))
-    : transactions
+  const visibleTransactions = transactions.filter(tx => !internalIds.has(tx.id))
   const monthGroups = groupByMonth(visibleTransactions)
-  const allMonthGroups = groupByMonth(transactions)
 
   const inputStyle = {
     padding: '0.5rem 0.75rem',
@@ -132,23 +128,6 @@ export default function Transactions() {
           style={inputStyle}
           title="Până la"
         />
-        <button
-          onClick={() => setHideInternal(v => !v)}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: 8,
-            border: '1px solid ' + (hideInternal ? '#3B82F6' : '#E2E8F0'),
-            background: hideInternal ? '#EFF6FF' : '#fff',
-            color: hideInternal ? '#1D4ED8' : '#64748B',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            marginLeft: 'auto',
-          }}
-        >
-          {hideInternal ? '✓ Fără transferuri interne' : 'Ascunde transferuri interne'}
-        </button>
       </div>
 
       {isLoading ? (
@@ -158,8 +137,6 @@ export default function Transactions() {
       ) : (
         monthGroups.map(([key, txs]) => {
           const isCollapsed = collapsed[key]
-          const allTxsForMonth = (Object.fromEntries(allMonthGroups))[key] || []
-          const hiddenCount = allTxsForMonth.length - txs.length
 
           // Compute month summary: total credit and total debit per currency
           const summary = {}
@@ -193,11 +170,6 @@ export default function Transactions() {
                     {formatMonthLabel(key)}
                   </span>
                   <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{txs.length} tranzacții</span>
-                  {hideInternal && hiddenCount > 0 && (
-                    <span style={{ fontSize: '0.75rem', color: '#F59E0B', marginLeft: '0.5rem' }}>
-                      ({hiddenCount} ascunse)
-                    </span>
-                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {/* Summary: +credit / -debit per currency */}
