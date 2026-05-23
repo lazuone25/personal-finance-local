@@ -138,3 +138,19 @@ export function useUpdateExtra() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
   })
 }
+
+export function useAddTransfer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (transfer) => api.post('/extra/transfer', transfer).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
+  })
+}
+
+export function useDeleteTransfer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/extra/transfer/${id}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
+  })
+}
