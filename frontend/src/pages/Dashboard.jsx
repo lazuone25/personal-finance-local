@@ -80,6 +80,9 @@ export default function Dashboard() {
   const depositRonTotal = deposits.filter(d => d.currency === 'RON').reduce((s, d) => s + parseFloat(d.amount), 0)
   const dobanzaTotalaRon = deposits.filter(d => d.currency === 'RON').reduce((s, d) => s + (parseFloat(d.total_at_maturity) - parseFloat(d.amount)), 0)
 
+  const xtbRon = Math.round(investitiiEur * (rates['EUR'] || 1))
+  const totalRon = (byCurrency['RON'] || 0) + depositRonTotal + xtbRon + extraTotal
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -93,20 +96,20 @@ export default function Dashboard() {
 
       {/* Top 5 summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-        {/* TOTAL RON */}
+        {/* TOTAL RON — conturi + depozite + investitii + extra */}
         <SummaryCard
           title="Total RON"
-          amount={byCurrency['RON'] || 0}
+          amount={totalRon}
           currency="RON"
           color="#3B82F6"
-          extra={toEur(byCurrency['RON'] || 0, rates)}
+          extra={toEur(totalRon, rates)}
         />
-        {/* TOTAL EUR */}
+        {/* TBD */}
         <SummaryCard
-          title="Total EUR"
-          amount={byCurrency['EUR'] || 0}
-          currency="EUR"
-          color="#10B981"
+          title="TBD"
+          amount={0}
+          currency=""
+          color="#CBD5E1"
         />
         {/* DEPOZITE — sum of deposit amounts in RON */}
         <SummaryCard
