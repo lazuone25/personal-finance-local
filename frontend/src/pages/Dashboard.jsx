@@ -65,7 +65,7 @@ export default function Dashboard() {
   const { data: rates = {} } = useRates()
   const { data: xtbData } = useXtbPortfolio()
   const { data: extraData } = useExtra()
-  const extraTotal = extraData?.main_balance || 0
+  const extraTotal = (extraData?.main_balance || 0) + (extraData?.fond_urgenta?.amount || 0)
   const xtbEquity = xtbData?.configured ? (xtbData.equity || 0) : 0
   const tradevilleTotal = 0  // placeholder until Tradeville is integrated
   const investitiiEur = xtbEquity + tradevilleTotal

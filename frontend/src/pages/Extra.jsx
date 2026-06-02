@@ -190,6 +190,8 @@ export default function Extra() {
   const deleteDePrimit = useDeleteDePrimit()
   const [showForm, setShowForm] = useState(false)
   const [showDePrimitForm, setShowDePrimitForm] = useState(false)
+  const [economiiCollapsed, setEconomiiCollapsed] = useState(false)
+  const [urgentaCollapsed, setUrgentaCollapsed] = useState(false)
 
   if (isLoading || !data) return (
     <div>
@@ -229,7 +231,7 @@ export default function Extra() {
       <h1 style={{ margin: '0 0 1.5rem' }}>Extra</h1>
 
       {/* Main card — Economii cu acces instant */}
-      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #A8A9AD', padding: '1.25rem 1.75rem', marginBottom: '0.5rem' }}>
+      <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #A8A9AD', padding: '1.25rem 1.75rem', marginBottom: '0.5rem', cursor: 'pointer' }} onClick={() => setEconomiiCollapsed(c => !c)}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#A8A9AD', display: 'inline-block' }} />
@@ -238,18 +240,21 @@ export default function Extra() {
               <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0.1rem 0 0' }}>Revolut</p>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.25rem' }}>Sold total</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-              <EditableAmount value={data.main_balance} onSave={updateMainBalance} fontSize="1.5rem" />
-              <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>{data.currency}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.25rem' }}>Sold total</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                <EditableAmount value={data.main_balance} onSave={updateMainBalance} fontSize="1.5rem" />
+                <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>{data.currency}</span>
+              </div>
             </div>
+            <span style={{ color: '#CBD5E1', fontSize: '0.75rem', userSelect: 'none' }}>{economiiCollapsed ? '▶' : '▼'}</span>
           </div>
         </div>
       </div>
 
       {/* Sub-accounts */}
-      <div style={{ marginLeft: '2rem', borderLeft: '2px solid #E2E8F0', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      {!economiiCollapsed && <div style={{ marginLeft: '2rem', borderLeft: '2px solid #E2E8F0', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
         {editableSubs.map((sub, idx) => (
           <div key={sub.id}>
             <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderLeft: `3px solid ${subColors[idx % subColors.length]}`, padding: '0.9rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -332,33 +337,36 @@ export default function Extra() {
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Fond de urgenta card */}
-      <div style={{ marginTop: '1.25rem', background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #10B981', padding: '1.25rem 1.75rem' }}>
+      <div style={{ marginTop: '1.25rem', background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #A8A9AD', padding: '1.25rem 1.75rem', cursor: 'pointer' }} onClick={() => setUrgentaCollapsed(c => !c)}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#A8A9AD', display: 'inline-block' }} />
             <div>
               <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A', margin: 0 }}>Fond de urgență</p>
-              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0.1rem 0 0' }}>Raiffeisen</p>
+              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0.1rem 0 0' }}>Revolut</p>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.25rem' }}>Sold total</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-              <EditableAmount
-                value={fondUrgenta.amount}
-                onSave={(val) => updateExtra.mutate({ ...data, fond_urgenta: { ...fondUrgenta, amount: val } })}
-                fontSize="1.5rem"
-              />
-              <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>{data.currency}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.25rem' }}>Sold total</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                <EditableAmount
+                  value={fondUrgenta.amount}
+                  onSave={(val) => updateExtra.mutate({ ...data, fond_urgenta: { ...fondUrgenta, amount: val } })}
+                  fontSize="1.5rem"
+                />
+                <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>{data.currency}</span>
+              </div>
+              {!urgentaCollapsed && dobandaFondUrgenta > 0 && (
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#10B981', fontWeight: 500 }}>
+                  Dobândă acumulată: {formatAmt(dobandaFondUrgenta)} RON
+                </p>
+              )}
             </div>
-            {dobandaFondUrgenta > 0 && (
-              <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#10B981', fontWeight: 500 }}>
-                Dobândă acumulată: {formatAmt(dobandaFondUrgenta)} RON
-              </p>
-            )}
+            <span style={{ color: '#CBD5E1', fontSize: '0.75rem', userSelect: 'none' }}>{urgentaCollapsed ? '▶' : '▼'}</span>
           </div>
         </div>
       </div>
