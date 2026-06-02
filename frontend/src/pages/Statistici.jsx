@@ -131,7 +131,7 @@ const Card = ({ children, style }) => (
 
 const NoData = () => <p style={{ color: '#94A3B8', fontSize: '0.875rem', margin: 0 }}>Nu există tranzacții sincronizate.</p>
 
-function DetaliiTab({ included, excluded }) {
+function DetaliiTab({ included, excluded, accountMap }) {
   const [showExcluded, setShowExcluded] = useState(false)
   const [filterType, setFilterType] = useState('all')
 
@@ -201,7 +201,15 @@ function DetaliiTab({ included, excluded }) {
                     <p style={{ margin: 0, fontSize: '0.825rem', color: '#0F172A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {tx.description || '—'}
                     </p>
-                    <p style={{ margin: '0.1rem 0 0', fontSize: '0.7rem', color: '#94A3B8' }}>{tx.booking_date}</p>
+                    <p style={{ margin: '0.1rem 0 0', fontSize: '0.7rem', color: '#94A3B8' }}>
+                      {tx.booking_date}
+                      {accountMap?.[tx.account_id] && (
+                        <span style={{ marginLeft: '0.4rem', color: '#CBD5E1' }}>·</span>
+                      )}
+                      {accountMap?.[tx.account_id] && (
+                        <span style={{ marginLeft: '0.4rem', color: '#94A3B8' }}>{accountMap[tx.account_id]}</span>
+                      )}
+                    </p>
                   </div>
                   <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap', color: tx.transaction_type === 'credit' ? '#10B981' : '#EF4444' }}>
                     {tx.transaction_type === 'credit' ? '+' : '-'}{fmt(Math.abs(parseFloat(tx.amount)))} {tx.currency}
@@ -235,8 +243,13 @@ export default function Statistici() {
   const excluded = transactions.filter(tx => !filtered.includes(tx))
   const hasData = filtered.length > 0
 
-  // Wealth breakdown
+  // Map account_id → nume scurt pentru tab Detalii
   const allAccounts = ['checking', 'card', 'savings', 'deposit', 'other'].flatMap(t => accounts?.[t] || [])
+  const accountMap = Object.fromEntries(
+    allAccounts.map(a => [a.id, `${a.bank_name} · ${a.name || ''} ${a.balance?.currency || a.currency || ''}`.trim()])
+  )
+
+  // Wealth breakdown
   const conturiRon = allAccounts
     .filter(a => (a.balance?.currency || a.currency) === 'RON')
     .reduce((s, a) => s + parseFloat(a.balance?.amount || 0), 0)
@@ -280,7 +293,7 @@ export default function Statistici() {
         </div>
       </div>
 
-      {activeTab === 'detalii' && <DetaliiTab included={filtered} excluded={excluded} />}
+      {activeTab === 'detalii' && <DetaliiTab included={filtered} excluded={excluded} accountMap={accountMap} />}
       {activeTab === 'grafice' && <>
 
       {/* Distribuție patrimoniu */}
