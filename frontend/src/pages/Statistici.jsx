@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTransactions, useDeposits, useRates, useXtbPortfolio, useExtra, useAccounts } from '../api/hooks'
 import {
   LineChart, Line, BarChart, Bar, Cell,
@@ -130,6 +131,93 @@ const Card = ({ children, style }) => (
 
 const NoData = () => <p style={{ color: '#94A3B8', fontSize: '0.875rem', margin: 0 }}>Nu există tranzacții sincronizate.</p>
 
+function DetaliiTab({ included, excluded }) {
+  const [showExcluded, setShowExcluded] = useState(false)
+  const [filterType, setFilterType] = useState('all')
+
+  const list = showExcluded ? excluded : included
+  const displayed = list
+    .filter(tx => filterType === 'all' || tx.transaction_type === filterType)
+    .sort((a, b) => (b.booking_date || '').localeCompare(a.booking_date || ''))
+
+  const byMonth = {}
+  for (const tx of displayed) {
+    const month = (tx.booking_date || '').substring(0, 7)
+    if (!byMonth[month]) byMonth[month] = []
+    byMonth[month].push(tx)
+  }
+
+  const tabBtn = (active) => ({
+    padding: '0.35rem 0.9rem', borderRadius: 6, border: 'none', cursor: 'pointer',
+    fontSize: '0.78rem', fontWeight: 600,
+    background: active ? '#0F172A' : 'transparent',
+    color: active ? '#fff' : '#64748B',
+  })
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.25rem', background: '#F1F5F9', borderRadius: 8, padding: '0.2rem' }}>
+          <button style={tabBtn(!showExcluded)} onClick={() => setShowExcluded(false)}>
+            Incluse ({included.length})
+          </button>
+          <button style={tabBtn(showExcluded)} onClick={() => setShowExcluded(true)}>
+            Excluse ({excluded.length})
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.25rem', background: '#F1F5F9', borderRadius: 8, padding: '0.2rem' }}>
+          {[['all', 'Toate'], ['credit', 'Venituri'], ['debit', 'Cheltuieli']].map(([val, lbl]) => (
+            <button key={val} style={tabBtn(filterType === val)} onClick={() => setFilterType(val)}>{lbl}</button>
+          ))}
+        </div>
+      </div>
+
+      {showExcluded && (
+        <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '0.75rem' }}>
+          Acestea sunt excluse din grafice — transferuri interne detectate după descriere sau perechi credit/debit în aceeași zi.
+        </p>
+      )}
+
+      {Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0])).map(([month, txs]) => {
+        const d = new Date(month + '-01')
+        const label = d.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })
+        const totalCredit = txs.filter(t => t.transaction_type === 'credit').reduce((s, t) => s + parseFloat(t.amount || 0), 0)
+        const totalDebit = txs.filter(t => t.transaction_type === 'debit').reduce((s, t) => s + parseFloat(t.amount || 0), 0)
+        return (
+          <div key={month} style={{ marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.4rem' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>{label}</p>
+              <p style={{ fontSize: '0.7rem', color: '#94A3B8', margin: 0 }}>
+                <span style={{ color: '#10B981', fontWeight: 600 }}>+{fmt(totalCredit)}</span>
+                {' · '}
+                <span style={{ color: '#EF4444', fontWeight: 600 }}>-{fmt(totalDebit)}</span>
+                {' RON'}
+              </p>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+              {txs.map((tx, i) => (
+                <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 1rem', borderTop: i > 0 ? '1px solid #F1F5F9' : 'none', gap: '1rem' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.825rem', color: '#0F172A', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {tx.description || '—'}
+                    </p>
+                    <p style={{ margin: '0.1rem 0 0', fontSize: '0.7rem', color: '#94A3B8' }}>{tx.booking_date}</p>
+                  </div>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', whiteSpace: 'nowrap', color: tx.transaction_type === 'credit' ? '#10B981' : '#EF4444' }}>
+                    {tx.transaction_type === 'credit' ? '+' : '-'}{fmt(Math.abs(parseFloat(tx.amount)))} {tx.currency}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+
+      {displayed.length === 0 && <p style={{ color: '#94A3B8', fontSize: '0.875rem' }}>Nicio tranzacție.</p>}
+    </div>
+  )
+}
+
 export default function Statistici() {
   const { data: transactions = [] } = useTransactions()
   const { data: deposits = [] } = useDeposits()
@@ -140,8 +228,11 @@ export default function Statistici() {
 
   const eurRate = rates['EUR'] || 1
 
+  const [activeTab, setActiveTab] = useState('grafice')
+
   // Filtrăm transferurile interne înainte de orice calcul
   const filtered = filterInternalTransfers(transactions)
+  const excluded = transactions.filter(tx => !filtered.includes(tx))
   const hasData = filtered.length > 0
 
   // Wealth breakdown
@@ -167,9 +258,30 @@ export default function Statistici() {
   const monthlyData = getMonthlyData(filtered)
   const dailyData = getDailyData(filtered)
 
+  const tabBtn = (key, label) => (
+    <button
+      onClick={() => setActiveTab(key)}
+      style={{
+        padding: '0.4rem 1.1rem', borderRadius: 6, border: 'none', cursor: 'pointer',
+        fontSize: '0.8rem', fontWeight: 600,
+        background: activeTab === key ? '#0F172A' : 'transparent',
+        color: activeTab === key ? '#fff' : '#64748B',
+      }}
+    >{label}</button>
+  )
+
   return (
     <div>
-      <h1 style={{ margin: '0 0 1.5rem' }}>Statistici</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h1 style={{ margin: 0 }}>Statistici</h1>
+        <div style={{ display: 'flex', gap: '0.25rem', background: '#F1F5F9', borderRadius: 8, padding: '0.25rem' }}>
+          {tabBtn('grafice', 'Grafice')}
+          {tabBtn('detalii', 'Detalii tranzacții')}
+        </div>
+      </div>
+
+      {activeTab === 'detalii' && <DetaliiTab included={filtered} excluded={excluded} />}
+      {activeTab === 'grafice' && <>
 
       {/* Distribuție patrimoniu */}
       <Section title="Distribuție patrimoniu">
@@ -259,6 +371,7 @@ export default function Statistici() {
           )}
         </Card>
       </Section>
+      </>}
     </div>
   )
 }
