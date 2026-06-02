@@ -258,11 +258,17 @@ export default function Extra() {
       {!economiiCollapsed && <div style={{ marginLeft: '2rem', borderLeft: '2px solid #E2E8F0', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
         {editableSubs.map((sub, idx) => (
           <div key={sub.id}>
-            <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderLeft: `3px solid ${subColors[idx % subColors.length]}`, padding: '0.9rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderLeft: `3px solid ${subColors[idx % subColors.length]}`, padding: '0.9rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: sub.id === 'bani_personali' ? 'pointer' : 'default' }}
+              onClick={sub.id === 'bani_personali' ? () => setDePrimitCollapsed(c => !c) : undefined}
+            >
               <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#475569', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sub.name}</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                <EditableAmount value={sub.amount} onSave={(val) => updateSubAccount(sub.id, val)} fontSize="1.1rem" color="#0F172A" />
-                <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{data.currency}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }} onClick={e => e.stopPropagation()}>
+                  <EditableAmount value={sub.amount} onSave={(val) => updateSubAccount(sub.id, val)} fontSize="1.1rem" color="#0F172A" />
+                  <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{data.currency}</span>
+                </div>
+                {sub.id === 'bani_personali' && <span style={{ color: '#CBD5E1', fontSize: '0.65rem', userSelect: 'none' }}>{dePrimitCollapsed ? '▶' : '▼'}</span>}
               </div>
             </div>
 
