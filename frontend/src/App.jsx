@@ -6,6 +6,7 @@ import Extra from './pages/Extra'
 import Investitii from './pages/Investitii'
 import Deposits from './pages/Deposits'
 import Transactions from './pages/Transactions'
+import Statistici from './pages/Statistici'
 import Settings from './pages/Settings'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/investitii" element={<Investitii />} />
         <Route path="/deposits" element={<Deposits />} />
         <Route path="/transactions" element={<Transactions />} />
+        <Route path="/statistici" element={<Statistici />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </Layout>
