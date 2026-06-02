@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 import json
 import pathlib
+from datetime import date
 
 router = APIRouter()
 
@@ -9,18 +10,37 @@ EXTRA_DATA_FILE = pathlib.Path(__file__).parent.parent / "extra_data.json"
 DEFAULT_DATA = {
     "main_balance": 0.0,
     "currency": "RON",
+    "interest_start_date": date.today().strftime("%Y-%m-%d"),
     "sub_accounts": [
         {"id": "bani_personali", "name": "BANI PERSONALI", "amount": 0.0},
         {"id": "alocatie_ema", "name": "ALOCATIE EMA", "amount": 0.0},
         {"id": "fonduri_nefolosite", "name": "FONDURI NEFOLOSITE", "amount": 0.0},
     ],
+    "de_primit": [],
+    "fond_urgenta": {
+        "amount": 0.0,
+        "interest_rate": 0.025,
+        "interest_start_date": date.today().strftime("%Y-%m-%d"),
+    },
     "transfers": []
 }
 
 def load_data() -> dict:
     if EXTRA_DATA_FILE.exists():
         with open(EXTRA_DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+        # Ensure new fields exist if loading older data
+        if "de_primit" not in data:
+            data["de_primit"] = []
+        if "interest_start_date" not in data:
+            data["interest_start_date"] = date.today().strftime("%Y-%m-%d")
+        if "fond_urgenta" not in data:
+            data["fond_urgenta"] = {
+                "amount": 0.0,
+                "interest_rate": 0.025,
+                "interest_start_date": date.today().strftime("%Y-%m-%d"),
+            }
+        return data
     return DEFAULT_DATA.copy()
 
 def save_data(data: dict):
@@ -102,5 +122,32 @@ def delete_transfer(transfer_id: str):
         data = apply_transfer(data, source_id, dest_id, amount, reverse=True)
         data["transfers"] = [t for t in data["transfers"] if t["id"] != transfer_id]
 
+    save_data(data)
+    return data
+
+
+@router.post("/extra/de-primit")
+def add_de_primit(entry: dict):
+    import uuid
+    from datetime import datetime
+
+    data = load_data()
+    if "de_primit" not in data:
+        data["de_primit"] = []
+
+    entry["id"] = str(uuid.uuid4())
+    entry["date"] = datetime.now().strftime("%Y-%m-%d")
+    data["de_primit"].append(entry)
+    save_data(data)
+    return data
+
+
+@router.delete("/extra/de-primit/{entry_id}")
+def delete_de_primit(entry_id: str):
+    data = load_data()
+    if "de_primit" not in data:
+        data["de_primit"] = []
+
+    data["de_primit"] = [e for e in data["de_primit"] if e["id"] != entry_id]
     save_data(data)
     return data

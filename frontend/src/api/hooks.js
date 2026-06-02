@@ -154,3 +154,19 @@ export function useDeleteTransfer() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
   })
 }
+
+export function useAddDePrimit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (entry) => api.post('/extra/de-primit', entry).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
+  })
+}
+
+export function useDeleteDePrimit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/extra/de-primit/${id}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
+  })
+}
