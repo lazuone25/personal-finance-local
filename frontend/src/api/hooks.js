@@ -147,6 +147,14 @@ export function useAddTransfer() {
   })
 }
 
+export function useUpdateTransfer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }) => api.put(`/extra/transfer/${id}`, data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
+  })
+}
+
 export function useDeleteTransfer() {
   const qc = useQueryClient()
   return useMutation({

@@ -108,6 +108,33 @@ def add_transfer(transfer: dict):
     return data
 
 
+@router.put("/extra/transfer/{transfer_id}")
+def update_transfer(transfer_id: str, transfer: dict):
+    data = load_data()
+    if "transfers" not in data:
+        data["transfers"] = []
+
+    old_tx = next((t for t in data["transfers"] if t["id"] == transfer_id), None)
+    if not old_tx:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Transfer not found")
+
+    # Reverseaza efectul vechi
+    data = apply_transfer(data, old_tx["source_id"], old_tx["dest_id"], float(old_tx["amount"]), reverse=True)
+
+    # Aplica efectul nou
+    new_source = transfer.get("source_id", old_tx["source_id"])
+    new_dest = transfer.get("dest_id", old_tx["dest_id"])
+    new_amount = float(transfer.get("amount", old_tx["amount"]))
+    data = apply_transfer(data, new_source, new_dest, new_amount)
+
+    updated = {**old_tx, "source_id": new_source, "dest_id": new_dest,
+               "amount": new_amount, "note": transfer.get("note", old_tx.get("note", ""))}
+    data["transfers"] = [updated if t["id"] == transfer_id else t for t in data["transfers"]]
+    save_data(data)
+    return data
+
+
 @router.delete("/extra/transfer/{transfer_id}")
 def delete_transfer(transfer_id: str):
     data = load_data()

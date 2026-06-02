@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useExtra, useUpdateExtra, useAddTransfer, useDeleteTransfer, useAddDePrimit, useDeleteDePrimit } from '../api/hooks'
+import { useExtra, useUpdateExtra, useAddTransfer, useUpdateTransfer, useDeleteTransfer, useAddDePrimit, useDeleteDePrimit } from '../api/hooks'
 
 function formatAmt(val) {
   return parseFloat(val || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2 })
@@ -71,11 +71,11 @@ function getAccountName(id) {
   return [...SOURCE_OPTIONS, ...DEST_OPTIONS].find(o => o.id === id)?.name || id
 }
 
-function TransferForm({ currency, onSave, onCancel }) {
-  const [amount, setAmount] = useState('')
-  const [sourceId, setSourceId] = useState('bani_personali')
-  const [destId, setDestId] = useState('revolut_personal')
-  const [note, setNote] = useState('')
+function TransferForm({ currency, onSave, onCancel, initial }) {
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
+  const [sourceId, setSourceId] = useState(initial?.source_id || 'bani_personali')
+  const [destId, setDestId] = useState(initial?.dest_id || 'revolut_personal')
+  const [note, setNote] = useState(initial?.note || '')
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -185,7 +185,9 @@ export default function Extra() {
   const { data, isLoading } = useExtra()
   const updateExtra = useUpdateExtra()
   const addTransfer = useAddTransfer()
+  const updateTransfer = useUpdateTransfer()
   const deleteTransfer = useDeleteTransfer()
+  const [editingId, setEditingId] = useState(null)
   const addDePrimit = useAddDePrimit()
   const deleteDePrimit = useDeleteDePrimit()
   const [showForm, setShowForm] = useState(false)
@@ -412,18 +414,30 @@ export default function Extra() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           {(data.transfers || []).map(tx => (
-            <div key={tx.id} style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: '0.8rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#0F172A', fontWeight: 500 }}>
-                  {getAccountName(tx.source_id)} → {getAccountName(tx.dest_id)}
-                  {tx.note && <span style={{ color: '#64748B', fontWeight: 400 }}> · {tx.note}</span>}
-                </p>
-                <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>{tx.date}</p>
-              </div>
-              <p style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#64748B', whiteSpace: 'nowrap' }}>
-                {formatAmt(tx.amount)} {data.currency}
-              </p>
-              <button onClick={() => deleteTransfer.mutate(tx.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }} title="Șterge">✕</button>
+            <div key={tx.id}>
+              {editingId === tx.id ? (
+                <TransferForm
+                  currency={data.currency}
+                  initial={tx}
+                  onSave={(updated) => { updateTransfer.mutate({ id: tx.id, ...updated }); setEditingId(null) }}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', padding: '0.8rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#0F172A', fontWeight: 500 }}>
+                      {getAccountName(tx.source_id)} → {getAccountName(tx.dest_id)}
+                      {tx.note && <span style={{ color: '#64748B', fontWeight: 400 }}> · {tx.note}</span>}
+                    </p>
+                    <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>{tx.date}</p>
+                  </div>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '1rem', color: '#64748B', whiteSpace: 'nowrap' }}>
+                    {formatAmt(tx.amount)} {data.currency}
+                  </p>
+                  <button onClick={() => setEditingId(tx.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: '0.85rem', padding: '0.25rem', lineHeight: 1 }} title="Editează">✎</button>
+                  <button onClick={() => deleteTransfer.mutate(tx.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: '1rem', padding: '0.25rem', lineHeight: 1 }} title="Șterge">✕</button>
+                </div>
+              )}
             </div>
           ))}
         </div>
