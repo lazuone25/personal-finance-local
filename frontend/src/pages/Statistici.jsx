@@ -14,6 +14,10 @@ const INTERNAL_PATTERNS = [
   /cont de economii/i,
   /conturile proprii/i,
   /top-up by/i,
+  /revolut\*\*/i,         // transfer intre carduri Revolut proprii
+  /andrei anghel/i,       // transfer la/de la cont comun propriu
+  /^to account,/i,        // transfer la cont bancar propriu
+  /transfer depozit/i,    // depunere depozit
 ]
 
 function isInternal(tx) {
