@@ -9,11 +9,26 @@ function fmt(val) {
   return parseFloat(val || 0).toLocaleString('ro-RO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
-// Filtrează transferurile interne: dacă pe aceeași zi există un credit și un debit
-// cu aceeași sumă, sunt probabil transferuri între conturi proprii.
+const INTERNAL_PATTERNS = [
+  /economii cu acces instant/i,
+  /cont de economii/i,
+  /conturile proprii/i,
+  /top-up by/i,
+]
+
+function isInternal(tx) {
+  const desc = tx.description || ''
+  return INTERNAL_PATTERNS.some(p => p.test(desc))
+}
+
+// Filtrare în două etape:
+// 1. Exclude după descriere (transferuri interne cunoscute)
+// 2. Exclude perechi credit+debit cu aceeași sumă în aceeași zi
 function filterInternalTransfers(transactions) {
+  const afterDesc = transactions.filter(tx => !isInternal(tx))
+
   const byDateAmt = {}
-  for (const tx of transactions) {
+  for (const tx of afterDesc) {
     const key = `${tx.booking_date}_${Math.round(Math.abs(parseFloat(tx.amount)) * 100)}`
     if (!byDateAmt[key]) byDateAmt[key] = { credits: [], debits: [] }
     if (tx.transaction_type === 'credit') byDateAmt[key].credits.push(tx.id)
@@ -27,7 +42,7 @@ function filterInternalTransfers(transactions) {
       internalIds.add(group.debits[i])
     }
   }
-  return transactions.filter(tx => !internalIds.has(tx.id))
+  return afterDesc.filter(tx => !internalIds.has(tx.id))
 }
 
 function monthLabel(d) {
