@@ -277,6 +277,19 @@ export default function Extra() {
               </div>
             </div>
 
+            {/* Cash section under BANI PERSONALI */}
+            {sub.id === 'bani_personali' && (
+              <div style={{ marginLeft: '1.5rem', borderLeft: '2px solid #FED7AA', paddingLeft: '0.75rem', marginTop: '0.3rem' }}>
+                <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderLeft: '3px solid #F59E0B', padding: '0.7rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.8rem', color: '#475569', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cash</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                    <EditableAmount value={data.cash || 0} onSave={(val) => updateExtra.mutate({ ...data, cash: val })} fontSize="1rem" color="#0F172A" />
+                    <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{data.currency}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* "De primit" section under BANI PERSONALI */}
             {sub.id === 'bani_personali' && (
               <div style={{ marginLeft: '1.5rem', borderLeft: '2px solid #BBF7D0', paddingLeft: '0.75rem', marginTop: '0.3rem', marginBottom: '0.1rem' }}>

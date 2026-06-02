@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTransactions, useConnections } from '../api/hooks'
+import { useTransactions, useConnections, useAddDePrimit } from '../api/hooks'
 import { getBankColor } from '../utils/bankColors'
 
 // Description patterns that indicate internal transfers
@@ -78,9 +78,20 @@ export default function Transactions() {
 
   const toggleMonth = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
+  const addDePrimit = useAddDePrimit()
+  const [dePrimitTx, setDePrimitTx] = useState(null) // tx being marked
+  const [dePrimitName, setDePrimitName] = useState('')
+
   const internalIds = detectInternalTransfers(transactions)
   const visibleTransactions = transactions.filter(tx => !internalIds.has(tx.id))
   const monthGroups = groupByMonth(visibleTransactions)
+
+  const submitDePrimit = () => {
+    if (!dePrimitTx || !dePrimitName.trim()) return
+    addDePrimit.mutate({ name: dePrimitName.trim(), amount: parseFloat(dePrimitTx.amount), note: dePrimitTx.description || '' })
+    setDePrimitTx(null)
+    setDePrimitName('')
+  }
 
   const inputStyle = {
     padding: '0.5rem 0.75rem',
@@ -191,7 +202,7 @@ export default function Transactions() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                        {['Bancă', 'Data', 'Descriere', 'Sumă', 'Tip'].map(h => (
+                        {['Bancă', 'Data', 'Descriere', 'Sumă', 'Tip', ''].map(h => (
                           <th key={h} style={{ padding: '0.65rem 1rem', textAlign: 'left', fontWeight: 600, fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                         ))}
                       </tr>
@@ -199,10 +210,12 @@ export default function Transactions() {
                     <tbody>
                       {txs.map(tx => {
                         const bankColor = getBankColor(tx.bank_name)
+                        const isMarking = dePrimitTx?.id === tx.id
                         return (
-                          <tr key={tx.id} style={{ borderTop: '1px solid #F1F5F9' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          <>
+                          <tr key={tx.id} style={{ borderTop: '1px solid #F1F5F9', background: isMarking ? '#F0FDF4' : 'transparent' }}
+                            onMouseEnter={e => { if (!isMarking) e.currentTarget.style.background = '#F8FAFC' }}
+                            onMouseLeave={e => { if (!isMarking) e.currentTarget.style.background = 'transparent' }}
                           >
                             <td style={{ padding: '0.65rem 1rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -222,7 +235,38 @@ export default function Transactions() {
                                 {tx.transaction_type}
                               </span>
                             </td>
+                            <td style={{ padding: '0.65rem 0.75rem' }}>
+                              <button
+                                onClick={() => { setDePrimitTx(isMarking ? null : tx); setDePrimitName('') }}
+                                title="Marchează ca de primit"
+                                style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: 5, border: '1px solid #BBF7D0', background: isMarking ? '#10B981' : '#F0FDF4', color: isMarking ? '#fff' : '#059669', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                              >
+                                De primit
+                              </button>
+                            </td>
                           </tr>
+                          {isMarking && (
+                            <tr key={`${tx.id}-form`} style={{ background: '#F0FDF4', borderTop: '1px solid #BBF7D0' }}>
+                              <td colSpan={6} style={{ padding: '0.6rem 1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>De la:</span>
+                                  <input
+                                    autoFocus
+                                    type="text"
+                                    value={dePrimitName}
+                                    onChange={e => setDePrimitName(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && submitDePrimit()}
+                                    placeholder="Nume persoană"
+                                    style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid #BBF7D0', fontSize: '0.8rem', outline: 'none', background: '#fff', width: 160 }}
+                                  />
+                                  <span style={{ fontSize: '0.8rem', color: '#475569' }}>{parseFloat(tx.amount).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} {tx.currency}</span>
+                                  <button onClick={submitDePrimit} style={{ padding: '0.3rem 0.75rem', borderRadius: 6, border: 'none', background: '#10B981', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Adaugă</button>
+                                  <button onClick={() => setDePrimitTx(null)} style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontSize: '0.8rem', cursor: 'pointer' }}>✕</button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          </>
                         )
                       })}
                     </tbody>

@@ -16,6 +16,7 @@ DEFAULT_DATA = {
         {"id": "alocatie_ema", "name": "ALOCATIE EMA", "amount": 0.0},
         {"id": "fonduri_nefolosite", "name": "FONDURI NEFOLOSITE", "amount": 0.0},
     ],
+    "cash": 0.0,
     "de_primit": [],
     "fond_urgenta": {
         "amount": 0.0,
@@ -40,6 +41,8 @@ def load_data() -> dict:
                 "interest_rate": 0.025,
                 "interest_start_date": date.today().strftime("%Y-%m-%d"),
             }
+        if "cash" not in data:
+            data["cash"] = 0.0
         return data
     return DEFAULT_DATA.copy()
 
