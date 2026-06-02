@@ -238,7 +238,10 @@ export default function Extra() {
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#A8A9AD', display: 'inline-block' }} />
             <div>
               <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A', margin: 0 }}>Economii cu acces instant</p>
-              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0.1rem 0 0' }}>Revolut</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.1rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0 }}>Revolut</p>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#10B981', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 4, padding: '0.05rem 0.35rem' }}>3% / an</span>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -358,7 +361,10 @@ export default function Extra() {
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#A8A9AD', display: 'inline-block' }} />
             <div>
               <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A', margin: 0 }}>Fond de urgență</p>
-              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0.1rem 0 0' }}>Revolut</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.1rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0 }}>Revolut</p>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#10B981', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 4, padding: '0.05rem 0.35rem' }}>2,5% / an</span>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
