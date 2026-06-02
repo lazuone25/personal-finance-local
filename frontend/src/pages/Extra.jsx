@@ -192,6 +192,7 @@ export default function Extra() {
   const [showDePrimitForm, setShowDePrimitForm] = useState(false)
   const [economiiCollapsed, setEconomiiCollapsed] = useState(false)
   const [urgentaCollapsed, setUrgentaCollapsed] = useState(false)
+  const [dePrimitCollapsed, setDePrimitCollapsed] = useState(false)
 
   if (isLoading || !data) return (
     <div>
@@ -268,32 +269,37 @@ export default function Extra() {
             {/* "De primit" section under BANI PERSONALI */}
             {sub.id === 'bani_personali' && (
               <div style={{ marginLeft: '1.5rem', borderLeft: '2px solid #BBF7D0', paddingLeft: '0.75rem', marginTop: '0.3rem', marginBottom: '0.1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', cursor: 'pointer' }} onClick={() => setDePrimitCollapsed(c => !c)}>
                   <p style={{ fontSize: '0.65rem', fontWeight: 600, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
                     De primit {dePrimit.length > 0 && `· ${formatAmt(dePrimit.reduce((s, e) => s + (e.amount || 0), 0))} RON`}
                   </p>
-                  {!showDePrimitForm && (
-                    <button
-                      onClick={() => setShowDePrimitForm(true)}
-                      style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderRadius: 5, border: '1px solid #BBF7D0', background: '#F0FDF4', color: '#059669', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      + De primit
-                    </button>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={e => e.stopPropagation()}>
+                    {!showDePrimitForm && !dePrimitCollapsed && (
+                      <button
+                        onClick={() => setShowDePrimitForm(true)}
+                        style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderRadius: 5, border: '1px solid #BBF7D0', background: '#F0FDF4', color: '#059669', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        + De primit
+                      </button>
+                    )}
+                    <span style={{ color: '#CBD5E1', fontSize: '0.65rem', userSelect: 'none', cursor: 'pointer' }} onClick={() => setDePrimitCollapsed(c => !c)}>
+                      {dePrimitCollapsed ? '▶' : '▼'}
+                    </span>
+                  </div>
                 </div>
 
-                {showDePrimitForm && (
+                {!dePrimitCollapsed && showDePrimitForm && (
                   <DePrimitForm
                     onSave={(entry) => { addDePrimit.mutate(entry); setShowDePrimitForm(false) }}
                     onCancel={() => setShowDePrimitForm(false)}
                   />
                 )}
 
-                {dePrimit.length === 0 && !showDePrimitForm && (
+                {!dePrimitCollapsed && dePrimit.length === 0 && !showDePrimitForm && (
                   <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0.1rem 0 0.3rem' }}>Nicio sumă de primit.</p>
                 )}
 
-                {dePrimit.map(entry => (
+                {!dePrimitCollapsed && dePrimit.map(entry => (
                   <div key={entry.id} style={{ background: '#F0FDF4', borderRadius: 7, padding: '0.45rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#0F172A', fontWeight: 500 }}>
