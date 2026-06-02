@@ -15,10 +15,14 @@ const INTERNAL_PATTERNS = [
   /cont de economii/i,
   /conturile proprii/i,
   /top-up by/i,
-  /revolut\*\*/i,         // transfer intre carduri Revolut proprii
+  /revolut\*\*/i,         // transfer Raiffeisen → Revolut via card
   /andrei anghel/i,       // transfer la/de la cont comun propriu
   /^to account,/i,        // transfer la cont bancar propriu
   /transfer depozit/i,    // depunere depozit
+  /trimis de pe revolut/i, // Revolut → Raiffeisen (intern)
+  /^cap\.dep/i,           // capital depozit returnat (banii proprii, nu venit)
+  /^from economii/i,      // alias EN pentru economii cu acces instant
+  /ordering party.*andrei anghel/i, // transfer propriu prin ordin de plată
 ]
 
 function isInternal(tx) {
