@@ -125,17 +125,45 @@ def _add_daily_interest():
     fond["amount"] = round(fond_amount + daily_urgenta, 2)
     data["fond_urgenta"] = fond
 
-    # Cont economii Lei Raiffeisen net 90%
+    with open(extra_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    logger.info(f"Dobândă zilnică adăugată: +{daily_economii} RON economii, +{daily_urgenta} RON fond urgență")
+
+
+def _credit_raiffeisen_interest():
+    """Creditează dobânda lunară netă (2%/an, 10% impozit) în contul Raiffeisen pe 30 ale lunii."""
+    import json
+    import pathlib
+    extra_file = pathlib.Path(__file__).parent.parent / "extra_data.json"
+    if not extra_file.exists():
+        return
+    with open(extra_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
     raiff = data.get("cont_economii_raiffeisen", {})
-    raiff_amount = raiff.get("amount", 0)
-    raiff_rate = raiff.get("interest_rate", 0.05)
-    daily_raiff = math.ceil(raiff_amount * raiff_rate / 365 * 0.9 * 100) / 100
-    raiff["amount"] = round(raiff_amount + daily_raiff, 2)
+    balance = raiff.get("amount", 0)
+    rate = raiff.get("interest_rate", 0.02)
+    last_payment = raiff.get("last_payment_date")
+
+    today = date.today()
+    if last_payment:
+        last_date = date.fromisoformat(last_payment)
+    else:
+        # Prima plată: de la începutul lunii curente
+        last_date = today.replace(day=1)
+
+    days = (today - last_date).days
+    if days <= 0:
+        return
+
+    interest = math.floor(balance * rate / 365 * 0.9 * days * 100) / 100
+    raiff["amount"] = round(balance + interest, 2)
+    raiff["last_payment_date"] = today.strftime("%Y-%m-%d")
     data["cont_economii_raiffeisen"] = raiff
 
     with open(extra_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
-    logger.info(f"Dobândă zilnică adăugată: +{daily_economii} RON economii, +{daily_urgenta} RON fond urgență, +{daily_raiff} RON Raiffeisen")
+    logger.info(f"Dobândă lunară Raiffeisen creditată: +{interest} RON (sold: {raiff['amount']} RON)")
 
 
 def start_scheduler(interval_minutes: int, db_factory):
@@ -154,6 +182,8 @@ def start_scheduler(interval_minutes: int, db_factory):
     _scheduler.add_job(sync_job, "interval", minutes=interval_minutes)
     # Dobânda zilnică la 00:01 în fiecare dimineață
     _scheduler.add_job(_add_daily_interest, CronTrigger(hour=0, minute=1))
+    # Dobânda lunară Raiffeisen pe 30 ale lunii la 00:02
+    _scheduler.add_job(_credit_raiffeisen_interest, CronTrigger(day=30, hour=0, minute=2))
     _scheduler.start()
     logger.info(f"Sync scheduler started — every {interval_minutes} minutes + dobândă zilnică la 00:01")
     return _scheduler

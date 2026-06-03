@@ -216,7 +216,7 @@ export default function Extra() {
   const alocatieEma = data.sub_accounts.find(s => s.id === 'alocatie_ema')?.amount || 0
 
   const fondUrgenta = data.fond_urgenta || { amount: 0, interest_rate: 0.025, interest_start_date: null }
-  const contRaiffeisen = data.cont_economii_raiffeisen || { amount: 0, interest_rate: 0.05, interest_start_date: null }
+  const contRaiffeisen = data.cont_economii_raiffeisen || { amount: 0, interest_rate: 0.02, last_payment_date: null }
 
   // Folosim data stocată; ziua de start contează ca zi 1 (counting inclusiv)
   const daysInclusive = (dateStr) => {
@@ -239,9 +239,16 @@ export default function Extra() {
   const dobandaZilnicaUrgenta = Math.ceil((fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) / 365 * 0.9 * 100) / 100
   const dobandaFondUrgenta = dobandaZilnicaUrgenta * fondUrgentaDays
 
-  const raiffDays = daysInclusive(contRaiffeisen.interest_start_date)
-  const dobandaZilnicaRaiff = Math.ceil((contRaiffeisen.amount || 0) * (contRaiffeisen.interest_rate || 0.05) / 365 * 0.9 * 100) / 100
-  const dobandaRaiff = dobandaZilnicaRaiff * raiffDays
+  const raiffLastPayment = contRaiffeisen.last_payment_date
+    ? new Date(contRaiffeisen.last_payment_date)
+    : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  const raiffDays = Math.max(0, Math.floor((new Date() - raiffLastPayment) / (1000 * 60 * 60 * 24)))
+  const dobandaRaiff = Math.floor((contRaiffeisen.amount || 0) * (contRaiffeisen.interest_rate || 0.02) / 365 * 0.9 * raiffDays * 100) / 100
+  const nextPayment30 = (() => {
+    const now = new Date()
+    const day30ThisMonth = new Date(now.getFullYear(), now.getMonth(), 30)
+    return day30ThisMonth > now ? day30ThisMonth : new Date(now.getFullYear(), now.getMonth() + 1, 30)
+  })()
 
   const dePrimit = data.de_primit || []
 
@@ -450,7 +457,8 @@ export default function Extra() {
               </div>
               {!raiffCollapsed && dobandaRaiff > 0 && (
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: '#10B981', fontWeight: 500 }}>
-                  Dobândă de la {fmtDate(contRaiffeisen.interest_start_date)}: {formatAmt(dobandaRaiff)} RON
+                  În așteptare: +{formatAmt(dobandaRaiff)} RON
+                  <span style={{ color: '#94A3B8', fontWeight: 400 }}> · creditare pe 30 {nextPayment30.toLocaleDateString('ro-RO', { month: 'long' })}</span>
                 </p>
               )}
             </div>
