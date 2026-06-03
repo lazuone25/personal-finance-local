@@ -101,11 +101,41 @@ def get_last_sync() -> datetime | None:
     return _last_sync
 
 
+def _add_daily_interest():
+    """Adaugă dobânda zilnică (net după 10% impozit) la soldurile din extra_data.json."""
+    import json
+    import pathlib
+    import math
+    extra_file = pathlib.Path(__file__).parent.parent / "extra_data.json"
+    if not extra_file.exists():
+        return
+    with open(extra_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    # Economii Revolut 3%/an net 90%
+    balance = data.get("main_balance", 0)
+    daily_economii = math.ceil(balance * 0.03 / 365 * 0.9 * 100) / 100
+    data["main_balance"] = round(balance + daily_economii, 2)
+
+    # Fond urgență 2.5%/an net 90%
+    fond = data.get("fond_urgenta", {})
+    fond_amount = fond.get("amount", 0)
+    fond_rate = fond.get("interest_rate", 0.025)
+    daily_urgenta = math.ceil(fond_amount * fond_rate / 365 * 0.9 * 100) / 100
+    fond["amount"] = round(fond_amount + daily_urgenta, 2)
+    data["fond_urgenta"] = fond
+
+    with open(extra_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    logger.info(f"Dobândă zilnică adăugată: +{daily_economii} RON economii, +{daily_urgenta} RON fond urgență")
+
+
 def start_scheduler(interval_minutes: int, db_factory):
     global _scheduler
     from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
 
-    def job():
+    def sync_job():
         db = db_factory()
         try:
             sync_all(db)
@@ -113,9 +143,11 @@ def start_scheduler(interval_minutes: int, db_factory):
             db.close()
 
     _scheduler = BackgroundScheduler()
-    _scheduler.add_job(job, "interval", minutes=interval_minutes)
+    _scheduler.add_job(sync_job, "interval", minutes=interval_minutes)
+    # Dobânda zilnică la 00:01 în fiecare dimineață
+    _scheduler.add_job(_add_daily_interest, CronTrigger(hour=0, minute=1))
     _scheduler.start()
-    logger.info(f"Sync scheduler started — every {interval_minutes} minutes")
+    logger.info(f"Sync scheduler started — every {interval_minutes} minutes + dobândă zilnică la 00:01")
     return _scheduler
 
 

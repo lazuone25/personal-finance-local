@@ -1,4 +1,4 @@
-import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates, useXtbPortfolio, useExtra } from '../api/hooks'
+import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates, useXtbPortfolio, useExtra, useDatorii } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 import { getBankColor } from '../utils/bankColors'
 
@@ -65,6 +65,7 @@ export default function Dashboard() {
   const { data: rates = {} } = useRates()
   const { data: xtbData } = useXtbPortfolio()
   const { data: extraData } = useExtra()
+  const { data: datoriiData } = useDatorii()
   const extraTotal = (extraData?.main_balance || 0) + (extraData?.fond_urgenta?.amount || 0)
   const xtbEquity = xtbData?.configured ? (xtbData.equity || 0) : 0
   const tradevilleTotal = 0  // placeholder until Tradeville is integrated
@@ -82,6 +83,21 @@ export default function Dashboard() {
 
   const xtbRon = Math.round(investitiiEur * (rates['EUR'] || 1))
   const totalRon = (byCurrency['RON'] || 0) + depositRonTotal + xtbRon + extraTotal
+
+  // Datorii
+  const creditRevolut = datoriiData?.credit_revolut || {}
+  const cardRaiffeisen = datoriiData?.card_raiffeisen || {}
+  const creditSold = creditRevolut.sold_curent || 0
+  const cardCheltuit = Math.max(0, (cardRaiffeisen.limita || 0) - (cardRaiffeisen.sold_curent || 0))
+  const dobandaZilnica = Math.round(creditSold * ((creditRevolut.rata_dobanzii || 0) / 100) / 365 * 100) / 100
+  const ziScadenta = creditRevolut.zi_scadenta || 1
+  const today = new Date()
+  const lastScad = new Date(today.getFullYear(), today.getMonth(), ziScadenta) <= today
+    ? new Date(today.getFullYear(), today.getMonth(), ziScadenta)
+    : new Date(today.getFullYear(), today.getMonth() - 1, ziScadenta)
+  const zileDobanda = Math.floor((today - lastScad) / (1000 * 60 * 60 * 24))
+  const dobandaAcumulata = dobandaZilnica * zileDobanda
+  const totalDatorii = creditSold + cardCheltuit + dobandaAcumulata
 
   return (
     <div>
@@ -104,12 +120,13 @@ export default function Dashboard() {
           color="#3B82F6"
           extra={toEur(totalRon, rates)}
         />
-        {/* TBD */}
+        {/* DATORII */}
         <SummaryCard
-          title="TBD"
-          amount={0}
-          currency=""
-          color="#CBD5E1"
+          title="Datorii"
+          amount={totalDatorii}
+          currency="RON"
+          color="#EF4444"
+          extra={toEur(totalDatorii, rates)}
         />
         {/* DEPOZITE — sum of deposit amounts in RON */}
         <SummaryCard

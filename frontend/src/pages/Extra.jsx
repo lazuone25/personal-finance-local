@@ -214,16 +214,28 @@ export default function Extra() {
   const baniPersonali = data.sub_accounts.find(s => s.id === 'bani_personali')?.amount || 0
   const alocatieEma = data.sub_accounts.find(s => s.id === 'alocatie_ema')?.amount || 0
 
-  // Dobandă economii Revolut 3%/an
-  const economiiDays = daysSince(data.interest_start_date)
-  const dobandaEconomii = (data.main_balance || 0) * 0.03 * economiiDays / 365 * 0.9
+  const fondUrgenta = data.fond_urgenta || { amount: 0, interest_rate: 0.025, interest_start_date: null }
+
+  // Folosim data stocată; ziua de start contează ca zi 1 (counting inclusiv)
+  const daysInclusive = (dateStr) => {
+    if (!dateStr) return 1
+    const diff = new Date() - new Date(dateStr)
+    return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1)
+  }
+  const fmtDate = (dateStr) => {
+    if (!dateStr) return new Date().toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return new Date(dateStr).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  const economiiDays = daysInclusive(data.interest_start_date)
+  const dobandaZilnicaEconomii = Math.ceil((data.main_balance || 0) * 0.03 / 365 * 0.9 * 100) / 100
+  const dobandaEconomii = dobandaZilnicaEconomii * economiiDays
 
   const fonduriNefolosite = (data.main_balance || 0) - baniPersonali - alocatieEma + dobandaEconomii
 
-  // Dobandă fond urgență
-  const fondUrgenta = data.fond_urgenta || { amount: 0, interest_rate: 0.025, interest_start_date: null }
-  const fondUrgentaDays = daysSince(fondUrgenta.interest_start_date)
-  const dobandaFondUrgenta = (fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) * fondUrgentaDays / 365 * 0.9
+  const fondUrgentaDays = daysInclusive(fondUrgenta.interest_start_date)
+  const dobandaZilnicaUrgenta = Math.ceil((fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) / 365 * 0.9 * 100) / 100
+  const dobandaFondUrgenta = dobandaZilnicaUrgenta * fondUrgentaDays
 
   const dePrimit = data.de_primit || []
 
@@ -362,7 +374,7 @@ export default function Extra() {
             </div>
             {dobandaEconomii > 0 && (
               <p style={{ margin: '0.15rem 0 0', fontSize: '0.7rem', color: '#10B981', fontWeight: 500 }}>
-                din care dobândă: {formatAmt(dobandaEconomii)} RON
+                Dobândă de la {fmtDate(data.interest_start_date)}: {formatAmt(dobandaEconomii)} RON
               </p>
             )}
           </div>
@@ -394,8 +406,8 @@ export default function Extra() {
                 <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>{data.currency}</span>
               </div>
               {!urgentaCollapsed && dobandaFondUrgenta > 0 && (
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#10B981', fontWeight: 500 }}>
-                  Dobândă acumulată: {formatAmt(dobandaFondUrgenta)} RON
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: '#10B981', fontWeight: 500 }}>
+                  Dobândă de la {fmtDate(fondUrgenta.interest_start_date)}: {formatAmt(dobandaFondUrgenta)} RON
                 </p>
               )}
             </div>

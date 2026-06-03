@@ -179,6 +179,59 @@ export function useDeleteDePrimit() {
   })
 }
 
+export function useCategories() {
+  return useQuery({
+    queryKey: ['categories'],
+    queryFn: () => api.get('/categories').then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useClassifyTransactions() {
+  return useMutation({
+    mutationFn: (transactions) =>
+      api.post('/categories/classify', { transactions }).then(r => r.data),
+  })
+}
+
+export function useSetTransactionCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ txId, categoryId }) =>
+      api.put(`/categories/transaction/${txId}`, { category_id: categoryId }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  })
+}
+
+export function useSetTransactionOwner() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ txId, owner }) =>
+      api.put(`/categories/owner/${txId}`, { owner }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  })
+}
+
+export function useSettleTransaction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ txId, settled }) =>
+      settled
+        ? api.post(`/categories/settle/${txId}`).then(r => r.data)
+        : api.delete(`/categories/settle/${txId}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  })
+}
+
+export function useAddCategoryRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ pattern, category_id }) =>
+      api.post('/categories/rules', { pattern, category_id }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  })
+}
+
 export function useDatorii() {
   return useQuery({
     queryKey: ['datorii'],

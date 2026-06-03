@@ -1,0 +1,116 @@
+{
+  "categories": [
+    {
+      "id": "alimente",
+      "name": "Alimente",
+      "color": "#10B981"
+    },
+    {
+      "id": "transport",
+      "name": "Transport",
+      "color": "#3B82F6"
+    },
+    {
+      "id": "utilitati",
+      "name": "Utilități",
+      "color": "#F59E0B"
+    },
+    {
+      "id": "sanatate",
+      "name": "Sănătate",
+      "color": "#EF4444"
+    },
+    {
+      "id": "divertisment",
+      "name": "Divertisment",
+      "color": "#8B5CF6"
+    },
+    {
+      "id": "cumparaturi",
+      "name": "Cumpărături",
+      "color": "#EC4899"
+    },
+    {
+      "id": "restaurant",
+      "name": "Restaurant & Cafenele",
+      "color": "#F97316"
+    },
+    {
+      "id": "rate",
+      "name": "Rate & Datorii",
+      "color": "#64748B"
+    },
+    {
+      "id": "venituri",
+      "name": "Venituri",
+      "color": "#06B6D4"
+    },
+    {
+      "id": "facultate",
+      "name": "Facultate",
+      "color": "#0EA5E9"
+    },
+    {
+      "id": "imprumuturi",
+      "name": "Împrumuturi",
+      "color": "#A855F7"
+    },
+    {
+      "id": "necategorizat",
+      "name": "Necategorizat",
+      "color": "#CBD5E1"
+    }
+  ],
+  "rules": [],
+  "owners": {
+    "237": "comun",
+    "233": "andrei",
+    "254": "comun",
+    "253": "andrei",
+    "231": "andrei",
+    "229": "andrei",
+    "240": "andrei",
+    "242": "comun",
+    "243": "comun",
+    "244": "comun",
+    "245": "comun",
+    "236": "comun",
+    "235": "comun",
+    "257": "comun",
+    "266": "comun",
+    "267": "comun",
+    "264": "andrei",
+    "258": "comun",
+    "256": "comun",
+    "239": "comun",
+    "246": "comun"
+  },
+  "settled": [
+    "233"
+  ],
+  "overrides": {
+    "256": "restaurant",
+    "257": "transport",
+    "258": "transport",
+    "263": "venituri",
+    "264": "restaurant",
+    "266": "sanatate",
+    "231": "divertisment",
+    "235": "transport",
+    "236": "transport",
+    "239": "transport",
+    "240": "restaurant",
+    "229": "restaurant",
+    "242": "facultate",
+    "243": "transport",
+    "244": "transport",
+    "245": "transport",
+    "246": "restaurant",
+    "267": "alimente",
+    "254": "alimente",
+    "260": "venituri",
+    "233": "imprumuturi",
+    "237": "cumparaturi",
+    "253": "imprumuturi"
+  }
+}

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useTransactions, useDeposits, useRates, useXtbPortfolio, useExtra, useAccounts } from '../api/hooks'
+import { useTransactions, useDeposits, useRates, useXtbPortfolio, useExtra, useAccounts, useCategories } from '../api/hooks'
 import {
   LineChart, Line, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, ReferenceLine,
+  ResponsiveContainer, ReferenceLine, PieChart, Pie,
 } from 'recharts'
 
 function fmt(val) {
@@ -236,10 +236,136 @@ function DetaliiTab({ included, excluded, accountMap }) {
   )
 }
 
+function classifyTx(tx, catData) {
+  if (!catData) return 'necategorizat'
+  const { rules = [], overrides = {} } = catData
+  const txId = String(tx.id)
+  if (overrides[txId]) return overrides[txId]
+  const desc = (tx.description || '').toLowerCase()
+  for (const rule of rules) {
+    try { if (new RegExp(rule.pattern, 'i').test(desc)) return rule.category_id } catch {}
+  }
+  return 'necategorizat'
+}
+
+function CategoriiTab({ transactions, catData }) {
+  const categories = catData?.categories || []
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+
+  const allMonths = [...new Set(transactions.map(tx => (tx.booking_date || '').slice(0, 7)).filter(Boolean))].sort().reverse()
+
+  const settledIds = new Set((catData?.settled || []).map(String))
+  const owners = catData?.owners || {}
+
+  const cheltuieliLuna = transactions.filter(tx =>
+    tx.transaction_type === 'debit' &&
+    tx.currency === 'RON' &&
+    (tx.booking_date || '').startsWith(selectedMonth) &&
+    !settledIds.has(String(tx.id))
+  )
+
+  const OWNERS = [
+    { id: 'andrei', label: 'Andrei', color: '#3B82F6' },
+    { id: 'anca',   label: 'Anca',   color: '#EC4899' },
+    { id: 'comun',  label: 'Comun',  color: '#10B981' },
+  ]
+
+  const monthNames = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+  const fmtMonth = (ym) => { const [y, m] = ym.split('-'); return `${monthNames[+m-1]} ${y}` }
+
+  const buildPieData = (txs) => {
+    const byCat = {}
+    for (const tx of txs) {
+      const catId = classifyTx(tx, catData)
+      byCat[catId] = (byCat[catId] || 0) + parseFloat(tx.amount)
+    }
+    return Object.entries(byCat)
+      .map(([catId, amount]) => {
+        const cat = categories.find(c => c.id === catId) || { name: catId, color: '#CBD5E1' }
+        return { name: cat.name, value: Math.round(amount * 100) / 100, color: cat.color }
+      })
+      .sort((a, b) => b.value - a.value)
+  }
+
+  const OwnerChart = ({ owner }) => {
+    const txs = cheltuieliLuna.filter(tx => owners[String(tx.id)] === owner.id)
+    const pieData = buildPieData(txs)
+    const total = pieData.reduce((s, d) => s + d.value, 0)
+
+    return (
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: owner.color, flexShrink: 0 }} />
+          <span style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A' }}>{owner.label}</span>
+          <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+            {total > 0 ? total.toLocaleString('ro-RO', { minimumFractionDigits: 2 }) + ' RON' : '— nicio cheltuială atribuită'}
+          </span>
+        </div>
+        {total > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: '1.25rem' }}>
+              <ResponsiveContainer width="100%" height={230}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                    outerRadius={90} innerRadius={42} paddingAngle={2}
+                    labelLine={false}
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                      if (percent < 0.06) return null
+                      const RADIAN = Math.PI / 180
+                      const r = innerRadius + (outerRadius - innerRadius) * 0.5
+                      const x = cx + r * Math.cos(-midAngle * RADIAN)
+                      const y = cy + r * Math.sin(-midAngle * RADIAN)
+                      return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>{`${Math.round(percent * 100)}%`}</text>
+                    }}>
+                    {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                  </Pie>
+                  <Tooltip formatter={(v) => [v.toLocaleString('ro-RO', { minimumFractionDigits: 2 }) + ' RON', '']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: '1.25rem' }}>
+              {pieData.map(({ name, value, color }) => (
+                <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid #F1F5F9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.83rem', color: '#1E293B' }}>{name}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#1E293B' }}>{value.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</span>
+                    <span style={{ fontSize: '0.7rem', color: '#94A3B8', marginLeft: '0.4rem' }}>{Math.round(value / total * 100)}%</span>
+                  </div>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', marginTop: '0.15rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748B' }}>Total</span>
+                <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#EF4444' }}>{total.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ marginTop: '1rem' }}>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+          style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.875rem', color: '#1E293B', background: '#fff', outline: 'none' }}>
+          {allMonths.map(m => <option key={m} value={m}>{fmtMonth(m)}</option>)}
+        </select>
+      </div>
+      {OWNERS.map(o => <OwnerChart key={o.id} owner={o} />)}
+    </div>
+  )
+}
+
 export default function Statistici() {
   const { data: transactions = [] } = useTransactions()
   const { data: deposits = [] } = useDeposits()
   const { data: rates = {} } = useRates()
+  const { data: catData } = useCategories()
   const { data: xtbData } = useXtbPortfolio()
   const { data: extraData } = useExtra()
   const { data: accounts } = useAccounts()
@@ -300,10 +426,12 @@ export default function Statistici() {
         <div style={{ display: 'flex', gap: '0.25rem', background: '#F1F5F9', borderRadius: 8, padding: '0.25rem' }}>
           {tabBtn('grafice', 'Grafice')}
           {tabBtn('detalii', 'Detalii tranzacții')}
+          {tabBtn('categorii', 'Categorii')}
         </div>
       </div>
 
       {activeTab === 'detalii' && <DetaliiTab included={filtered} excluded={excluded} accountMap={accountMap} />}
+      {activeTab === 'categorii' && <CategoriiTab transactions={filtered} catData={catData} />}
       {activeTab === 'grafice' && <>
 
       {/* Distribuție patrimoniu */}

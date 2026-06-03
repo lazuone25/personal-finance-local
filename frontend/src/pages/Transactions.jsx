@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useTransactions, useConnections, useAddDePrimit } from '../api/hooks'
+import { useState, useRef, useEffect } from 'react'
+import { useTransactions, useConnections, useAddDePrimit, useCategories, useSetTransactionCategory, useSettleTransaction, useSetTransactionOwner } from '../api/hooks'
 import { getBankColor } from '../utils/bankColors'
 
 // Description patterns that indicate internal transfers
@@ -70,11 +70,137 @@ function formatMonthLabel(key) {
   return `${months[parseInt(month, 10) - 1]} ${year}`
 }
 
+const OWNERS = [
+  { id: 'andrei', label: 'Andrei', color: '#3B82F6' },
+  { id: 'anca',   label: 'Anca',   color: '#EC4899' },
+  { id: 'comun',  label: 'Comun',  color: '#10B981' },
+]
+
+function OwnerBadge({ txId, owners, onSet }) {
+  const [open, setOpen] = useState(false)
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
+  const ref = useRef()
+  const ownerId = owners[String(txId)]
+  const owner = OWNERS.find(o => o.id === ownerId)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false) }
+    const closeScroll = () => setOpen(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', closeScroll, true)
+    return () => { document.removeEventListener('mousedown', close); window.removeEventListener('scroll', closeScroll, true) }
+  }, [open])
+
+  const handleOpen = () => {
+    const rect = ref.current?.getBoundingClientRect()
+    if (rect) setDropPos({ top: rect.bottom + 4, left: rect.left })
+    setOpen(o => !o)
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block', marginLeft: '0.3rem' }}>
+      <span
+        onClick={handleOpen}
+        style={{ display: 'inline-block', padding: '0.18rem 0.55rem', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: owner ? owner.color + '22' : '#F1F5F9', color: owner ? owner.color : '#94A3B8', cursor: 'pointer', border: `1px solid ${owner ? owner.color + '44' : '#E2E8F0'}`, whiteSpace: 'nowrap' }}
+      >
+        {owner ? owner.label : '—'}
+      </span>
+      {open && (
+        <div style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', minWidth: 120, padding: '0.3rem 0' }}>
+          {OWNERS.map(o => (
+            <div key={o.id} onClick={() => { onSet(txId, ownerId === o.id ? null : o.id); setOpen(false) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem', color: '#1E293B', background: o.id === ownerId ? '#F8FAFC' : 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+              onMouseLeave={e => e.currentTarget.style.background = o.id === ownerId ? '#F8FAFC' : 'transparent'}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: o.color, flexShrink: 0 }} />
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function classifyTx(tx, catData) {
+  if (!catData) return 'necategorizat'
+  const { rules = [], overrides = {} } = catData
+  const txId = String(tx.id)
+  if (overrides[txId]) return overrides[txId]
+  const desc = (tx.description || '').toLowerCase()
+  for (const rule of rules) {
+    try { if (new RegExp(rule.pattern, 'i').test(desc)) return rule.category_id } catch {}
+  }
+  return 'necategorizat'
+}
+
+function CategoryBadge({ tx, catData, onSet }) {
+  const [open, setOpen] = useState(false)
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
+  const badgeRef = useRef()
+  const catId = classifyTx(tx, catData)
+  const categories = catData?.categories || []
+  const cat = categories.find(c => c.id === catId)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => { if (!badgeRef.current?.contains(e.target)) setOpen(false) }
+    const closeOnScroll = () => setOpen(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', closeOnScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', closeOnScroll, true)
+    }
+  }, [open])
+
+  const handleOpen = () => {
+    const rect = badgeRef.current?.getBoundingClientRect()
+    if (rect) setDropPos({ top: rect.bottom + 4, left: rect.left })
+    setOpen(o => !o)
+  }
+
+  return (
+    <div ref={badgeRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <span
+        onClick={handleOpen}
+        style={{ display: 'inline-block', padding: '0.18rem 0.55rem', borderRadius: 20, fontSize: '0.7rem', fontWeight: 600, background: (cat?.color || '#CBD5E1') + '22', color: cat?.color || '#64748B', cursor: 'pointer', border: `1px solid ${cat?.color || '#CBD5E1'}44`, whiteSpace: 'nowrap' }}
+      >
+        {cat?.name || 'Necategorizat'}
+      </span>
+      {open && (
+        <div style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', minWidth: 190, padding: '0.3rem 0' }}>
+          {categories.map(c => (
+            <div
+              key={c.id}
+              onClick={() => { onSet(tx.id, c.id); setOpen(false) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.75rem', cursor: 'pointer', fontSize: '0.8rem', color: '#1E293B', background: c.id === catId ? '#F8FAFC' : 'transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+              onMouseLeave={e => e.currentTarget.style.background = c.id === catId ? '#F8FAFC' : 'transparent'}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+              {c.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Transactions() {
   const { data: connections = [] } = useConnections()
   const [filters, setFilters] = useState({})
   const { data: transactions = [], isLoading } = useTransactions(filters)
   const [collapsed, setCollapsed] = useState({})
+  const { data: catData } = useCategories()
+  const setCat = useSetTransactionCategory()
+  const settle = useSettleTransaction()
+  const setOwner = useSetTransactionOwner()
+  const settledIds = new Set((catData?.settled || []).map(String))
+  const owners = catData?.owners || {}
 
   const setFilter = (key, value) =>
     setFilters(prev => ({ ...prev, [key]: value || undefined }))
@@ -205,7 +331,7 @@ export default function Transactions() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                        {['Bancă', 'Data', 'Descriere', 'Sumă', 'Tip', ''].map(h => (
+                        {['Bancă', 'Data', 'Descriere', 'Sumă', 'Tip', 'Categorie', ''].map(h => (
                           <th key={h} style={{ padding: '0.65rem 1rem', textAlign: 'left', fontWeight: 600, fontSize: '0.72rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                         ))}
                       </tr>
@@ -238,7 +364,23 @@ export default function Transactions() {
                                 {tx.transaction_type}
                               </span>
                             </td>
-                            <td style={{ padding: '0.65rem 0.75rem' }}>
+                            <td style={{ padding: '0.65rem 1rem' }}>
+                              <CategoryBadge tx={tx} catData={catData} onSet={(txId, catId) => setCat.mutate({ txId, categoryId: catId })} />
+                              <OwnerBadge txId={tx.id} owners={owners} onSet={(txId, owner) => setOwner.mutate({ txId, owner })} />
+                            </td>
+                            <td style={{ padding: '0.65rem 0.75rem', whiteSpace: 'nowrap' }}>
+                              {classifyTx(tx, catData) === 'imprumuturi' && (() => {
+                                const isSettled = settledIds.has(String(tx.id))
+                                return (
+                                  <button
+                                    onClick={() => settle.mutate({ txId: tx.id, settled: !isSettled })}
+                                    title={isSettled ? 'Marchează ca neachitat' : 'Marchează ca achitat — exclude din cheltuieli'}
+                                    style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: 5, border: `1px solid ${isSettled ? '#BBF7D0' : '#E2E8F0'}`, background: isSettled ? '#10B981' : '#fff', color: isSettled ? '#fff' : '#64748B', cursor: 'pointer', fontWeight: 600, marginRight: '0.35rem' }}
+                                  >
+                                    {isSettled ? '✓ Achitat' : 'Achitat'}
+                                  </button>
+                                )
+                              })()}
                               <button
                                 onClick={() => { setDePrimitTx(isMarking ? null : tx); setDePrimitName('') }}
                                 title="Marchează ca de primit"
