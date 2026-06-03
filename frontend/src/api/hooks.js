@@ -178,3 +178,34 @@ export function useDeleteDePrimit() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['extra'] }),
   })
 }
+
+export function useDatorii() {
+  return useQuery({
+    queryKey: ['datorii'],
+    queryFn: () => api.get('/datorii').then(r => r.data),
+  })
+}
+
+export function useUpdateDatorii() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ accountId, ...data }) => api.put(`/datorii/${accountId}`, data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['datorii'] }),
+  })
+}
+
+export function useAddPayment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ accountId, ...data }) => api.post(`/datorii/${accountId}/payments`, data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['datorii'] }),
+  })
+}
+
+export function useDeletePayment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ accountId, paymentId }) => api.delete(`/datorii/${accountId}/payments/${paymentId}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['datorii'] }),
+  })
+}

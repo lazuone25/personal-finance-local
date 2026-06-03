@@ -7,6 +7,7 @@ const navItems = [
   { to: '/investitii', label: 'INVESTIȚII' },
   { to: '/deposits', label: 'DEPOZITE' },
   { to: '/transactions', label: 'TRANZACȚII' },
+  { to: '/datorii', label: 'DATORII' },
   { to: '/statistici', label: 'STATISTICI' },
   { to: '/settings', label: 'SETĂRI' },
 ]

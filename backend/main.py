@@ -35,6 +35,7 @@ from backend.routers.deposits import router as deposits_router
 from backend.routers.rates import router as rates_router
 from backend.routers.xtb import router as xtb_router
 from backend.routers.extra import router as extra_router
+from backend.routers.datorii import router as datorii_router
 app.include_router(banks.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(accounts.router, prefix="/api")
@@ -44,3 +45,4 @@ app.include_router(deposits_router, prefix="/api")
 app.include_router(rates_router, prefix="/api")
 app.include_router(xtb_router, prefix="/api")
 app.include_router(extra_router, prefix="/api")
+app.include_router(datorii_router, prefix="/api")
