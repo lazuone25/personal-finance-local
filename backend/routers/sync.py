@@ -17,6 +17,12 @@ def trigger_sync(db: Session = Depends(get_db)):
     return result
 
 
+@router.post("/sync/{bank_name}")
+def trigger_sync_bank(bank_name: str, db: Session = Depends(get_db)):
+    result = sync_all(db, force_bank=bank_name)
+    return result
+
+
 @router.get("/sync/status")
 def get_sync_status(db: Session = Depends(get_db)):
     from backend.models import BankConnection

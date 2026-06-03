@@ -11,15 +11,39 @@ logger = logging.getLogger(__name__)
 _last_sync: datetime | None = None
 _scheduler = None
 
+# Per-bank last sync times to enforce different intervals per bank
+_bank_last_sync: dict[str, datetime] = {}
 
-def sync_all(db: Session) -> dict:
+# Banks that need a longer sync interval (minutes) due to strict rate limits
+SLOW_BANK_INTERVALS: dict[str, int] = {
+    "Raiffeisen": int(os.getenv("RAIFFEISEN_SYNC_INTERVAL_MINUTES", "720")),  # 12h default
+}
+
+
+def _should_sync_bank(bank_name: str, default_interval_minutes: int) -> bool:
+    interval = SLOW_BANK_INTERVALS.get(bank_name, default_interval_minutes)
+    last = _bank_last_sync.get(bank_name)
+    if last is None:
+        return True
+    return (datetime.now(timezone.utc) - last).total_seconds() >= interval * 60
+
+
+def sync_all(db: Session, force_bank: str | None = None) -> dict:
     global _last_sync
     connections = db.query(BankConnection).filter_by(is_active=True).all()
     results = []
     date_from = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
     date_to = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    default_interval = int(os.getenv("SYNC_INTERVAL_MINUTES", "30"))
 
     for conn in connections:
+        if force_bank and conn.bank_name != force_bank:
+            continue
+        if not force_bank and not _should_sync_bank(conn.bank_name, default_interval):
+            logger.info(f"Skipping {conn.bank_name} — synced recently (interval: {SLOW_BANK_INTERVALS.get(conn.bank_name, default_interval)} min)")
+            results.append({"bank": conn.bank_name, "status": "skipped"})
+            continue
+
         conn_ok = True
         for acc in conn.accounts:
             try:
@@ -64,6 +88,7 @@ def sync_all(db: Session) -> dict:
                 logger.error(f"Sync failed for account {acc.external_id}: {e}")
 
         if conn_ok:
+            _bank_last_sync[conn.bank_name] = datetime.now(timezone.utc)
             results.append({"bank": conn.bank_name, "status": "ok"})
         else:
             results.append({"bank": conn.bank_name, "status": "partial_error"})
