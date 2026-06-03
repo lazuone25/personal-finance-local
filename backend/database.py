@@ -25,3 +25,12 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _migrate()
+
+
+def _migrate():
+    with engine.connect() as conn:
+        cols = [row[1] for row in conn.execute(__import__('sqlalchemy').text("PRAGMA table_info(bank_connections)")).fetchall()]
+        if 'owner' not in cols:
+            conn.execute(__import__('sqlalchemy').text("ALTER TABLE bank_connections ADD COLUMN owner VARCHAR NOT NULL DEFAULT 'andrei'"))
+            conn.commit()

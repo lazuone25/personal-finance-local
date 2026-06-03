@@ -51,6 +51,7 @@ class ConnectionOut(BaseModel):
     session_id: str
     connected_at: datetime
     is_active: bool
+    owner: str = 'andrei'
 
     model_config = ConfigDict(from_attributes=True)
 

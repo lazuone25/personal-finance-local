@@ -17,9 +17,10 @@ REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8000/api/auth/callbac
 def connect_bank(bank_id: str, body: dict = Body(...), db: Session = Depends(get_db)):
     bank_name = body.get("bank_name", bank_id)
     country = body.get("country", "RO")
+    owner = body.get("owner", "andrei")
     result = initiate_consent(bank_name, bank_id, REDIRECT_URI, country)
-    # Store pending connection (is_active=False until callback confirms)
-    existing = db.query(BankConnection).filter_by(bank_id=bank_id, is_active=False).first()
+    # Reuse pending (not yet confirmed) connection for same bank + owner
+    existing = db.query(BankConnection).filter_by(bank_id=bank_id, owner=owner, is_active=False).first()
     if existing:
         existing.session_id = result["authorization_id"]
         existing.state = result["state"]
@@ -32,6 +33,7 @@ def connect_bank(bank_id: str, body: dict = Body(...), db: Session = Depends(get
             state=result["state"],
             connected_at=datetime.now(timezone.utc),
             is_active=False,
+            owner=owner,
         )
         db.add(conn)
     db.commit()
@@ -48,9 +50,10 @@ def auth_callback(state: str, code: str, db: Session = Depends(get_db)):
     conn.session_id = session_data["session_id"]
     conn.is_active = True
 
-    # Deactivate any other active connections for the same bank
+    # Deactivate only previous connections for the same bank + same owner (reconnect)
     old_conns = db.query(BankConnection).filter(
         BankConnection.bank_id == conn.bank_id,
+        BankConnection.owner == conn.owner,
         BankConnection.id != conn.id,
         BankConnection.is_active == True,
     ).all()

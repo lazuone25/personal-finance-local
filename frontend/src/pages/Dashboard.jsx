@@ -1,4 +1,4 @@
-import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates, useXtbPortfolio, useExtra, useDatorii } from '../api/hooks'
+import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates, useXtbPortfolio, useExtra, useDatorii, useConnections } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 import { getBankColor } from '../utils/bankColors'
 
@@ -24,7 +24,10 @@ function groupByCurrency(accounts) {
   return grouped
 }
 
-function groupByOwner(accounts) {
+function groupByOwner(accounts, connections) {
+  const connOwnerMap = {}
+  for (const c of (connections || [])) connOwnerMap[c.id] = c.owner || 'andrei'
+
   const all = ALL_TYPES.flatMap(t => accounts?.[t] || [])
   const groups = { comun: {}, andrei: {}, anca: {} }
   for (const acc of all) {
@@ -32,8 +35,7 @@ function groupByOwner(accounts) {
     if (!currency) continue
     const amount = parseFloat(acc.balance?.amount || 0)
     if (acc.bank_name === 'Revolut' && currency === 'USD') continue
-    const isComun = acc.bank_name === 'Revolut' && acc.name?.includes('&')
-    const owner = isComun ? 'comun' : 'andrei'
+    const owner = connOwnerMap[acc.bank_connection_id] || 'andrei'
     const label = acc.bank_name || 'Altele'
     if (!groups[owner][label]) groups[owner][label] = {}
     if (!groups[owner][label][currency]) groups[owner][label][currency] = 0
@@ -56,6 +58,7 @@ function currencyColor(currency) {
 
 export default function Dashboard() {
   const { data: accounts, isLoading, isError } = useAccounts()
+  const { data: connections = [] } = useConnections()
   const { data: transactions = [] } = useTransactions()
   const { data: syncStatus } = useSyncStatus()
   const { data: deposits = [] } = useDeposits()
@@ -72,7 +75,7 @@ export default function Dashboard() {
   if (isError) return <p style={{ color: '#EF4444' }}>Eroare la încărcarea datelor. Verifică că serverul rulează.</p>
 
   const byCurrency = groupByCurrency(accounts)
-  const byOwner = groupByOwner(accounts)
+  const byOwner = groupByOwner(accounts, connections)
   const recent = transactions.slice(0, 10)
 
   const depositRonTotal = deposits.filter(d => d.currency === 'RON').reduce((s, d) => s + parseFloat(d.amount), 0)

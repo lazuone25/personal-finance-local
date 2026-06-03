@@ -9,6 +9,7 @@ export default function Settings() {
   const disconnectBank = useDisconnectBank()
   const manualSync = useManualSync()
   const [selectedBank, setSelectedBank] = useState(null)
+  const [selectedOwner, setSelectedOwner] = useState('andrei')
   const [connecting, setConnecting] = useState(false)
 
   const handleConnect = async () => {
@@ -19,6 +20,7 @@ export default function Settings() {
         bank_id: selectedBank.bic,
         bank_name: selectedBank.name,
         country: selectedBank.country || 'RO',
+        owner: selectedOwner,
       })
       window.open(result.redirect_url, '_blank')
     } finally {
@@ -26,15 +28,13 @@ export default function Settings() {
     }
   }
 
-  const connectedIds = new Set(connections.map(c => c.bank_id))
-
   return (
     <div>
       <h1>Setări</h1>
 
       <section style={{ marginBottom: '2rem' }}>
         <h2>Conectează o bancă</h2>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
             onChange={e => setSelectedBank(banks.find(b => b.bic === e.target.value) || null)}
             defaultValue=""
@@ -44,6 +44,15 @@ export default function Settings() {
             {banks.map(b => (
               <option key={b.bic || b.name} value={b.bic}>{b.name}</option>
             ))}
+          </select>
+          <select
+            value={selectedOwner}
+            onChange={e => setSelectedOwner(e.target.value)}
+            style={{ padding: '0.5rem', minWidth: 120 }}
+          >
+            <option value="andrei">Andrei</option>
+            <option value="anca">Anca</option>
+            <option value="comun">Comun</option>
           </select>
           <button
             onClick={handleConnect}
@@ -70,6 +79,14 @@ export default function Settings() {
               <li key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
                 <span style={{ color: '#2ecc71' }}>✓</span>
                 <span>{c.bank_name}</span>
+                <span style={{
+                  fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem',
+                  borderRadius: 20,
+                  background: c.owner === 'anca' ? '#FCE7F3' : c.owner === 'comun' ? '#EDE9FE' : '#DBEAFE',
+                  color: c.owner === 'anca' ? '#9D174D' : c.owner === 'comun' ? '#5B21B6' : '#1E40AF',
+                }}>
+                  {c.owner === 'anca' ? 'Anca' : c.owner === 'comun' ? 'Comun' : 'Andrei'}
+                </span>
                 <button
                   onClick={() => disconnectBank.mutate(c.id)}
                   style={{ marginLeft: 'auto', color: '#e74c3c', background: 'none', border: 'none', cursor: 'pointer' }}

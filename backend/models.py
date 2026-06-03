@@ -32,6 +32,7 @@ class BankConnection(Base):
     state = Column(String, nullable=True)
     connected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
+    owner = Column(String, nullable=False, default='andrei')
 
     accounts = relationship("Account", back_populates="bank_connection")
 
