@@ -194,6 +194,7 @@ export default function Extra() {
   const [showDePrimitForm, setShowDePrimitForm] = useState(false)
   const [economiiCollapsed, setEconomiiCollapsed] = useState(false)
   const [urgentaCollapsed, setUrgentaCollapsed] = useState(false)
+  const [raiffCollapsed, setRaiffCollapsed] = useState(false)
   const [dePrimitCollapsed, setDePrimitCollapsed] = useState(false)
 
   if (isLoading || !data) return (
@@ -215,6 +216,7 @@ export default function Extra() {
   const alocatieEma = data.sub_accounts.find(s => s.id === 'alocatie_ema')?.amount || 0
 
   const fondUrgenta = data.fond_urgenta || { amount: 0, interest_rate: 0.025, interest_start_date: null }
+  const contRaiffeisen = data.cont_economii_raiffeisen || { amount: 0, interest_rate: 0.05, interest_start_date: null }
 
   // Folosim data stocată; ziua de start contează ca zi 1 (counting inclusiv)
   const daysInclusive = (dateStr) => {
@@ -236,6 +238,10 @@ export default function Extra() {
   const fondUrgentaDays = daysInclusive(fondUrgenta.interest_start_date)
   const dobandaZilnicaUrgenta = Math.ceil((fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) / 365 * 0.9 * 100) / 100
   const dobandaFondUrgenta = dobandaZilnicaUrgenta * fondUrgentaDays
+
+  const raiffDays = daysInclusive(contRaiffeisen.interest_start_date)
+  const dobandaZilnicaRaiff = Math.ceil((contRaiffeisen.amount || 0) * (contRaiffeisen.interest_rate || 0.05) / 365 * 0.9 * 100) / 100
+  const dobandaRaiff = dobandaZilnicaRaiff * raiffDays
 
   const dePrimit = data.de_primit || []
 
@@ -412,6 +418,43 @@ export default function Extra() {
               )}
             </div>
             <span style={{ color: '#CBD5E1', fontSize: '0.75rem', userSelect: 'none' }}>{urgentaCollapsed ? '▶' : '▼'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Cont economii Lei Raiffeisen */}
+      <div style={{ marginTop: '1.25rem', background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', borderLeft: '4px solid #FFD700', padding: '1.25rem 1.75rem', cursor: 'pointer' }} onClick={() => setRaiffCollapsed(c => !c)}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#FFD700', display: 'inline-block' }} />
+            <div>
+              <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0F172A', margin: 0 }}>Cont economii Lei</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.1rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0 }}>Raiffeisen</p>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#10B981', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 4, padding: '0.05rem 0.35rem' }}>
+                  {((contRaiffeisen.interest_rate || 0.05) * 100).toFixed(1).replace('.', ',')}% / an
+                </span>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.25rem' }}>Sold total</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                <EditableAmount
+                  value={contRaiffeisen.amount}
+                  onSave={(val) => updateExtra.mutate({ ...data, cont_economii_raiffeisen: { ...contRaiffeisen, amount: val } })}
+                  fontSize="1.5rem"
+                />
+                <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>RON</span>
+              </div>
+              {!raiffCollapsed && dobandaRaiff > 0 && (
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: '#10B981', fontWeight: 500 }}>
+                  Dobândă de la {fmtDate(contRaiffeisen.interest_start_date)}: {formatAmt(dobandaRaiff)} RON
+                </p>
+              )}
+            </div>
+            <span style={{ color: '#CBD5E1', fontSize: '0.75rem', userSelect: 'none' }}>{raiffCollapsed ? '▶' : '▼'}</span>
           </div>
         </div>
       </div>

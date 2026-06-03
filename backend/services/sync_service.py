@@ -125,9 +125,17 @@ def _add_daily_interest():
     fond["amount"] = round(fond_amount + daily_urgenta, 2)
     data["fond_urgenta"] = fond
 
+    # Cont economii Lei Raiffeisen net 90%
+    raiff = data.get("cont_economii_raiffeisen", {})
+    raiff_amount = raiff.get("amount", 0)
+    raiff_rate = raiff.get("interest_rate", 0.05)
+    daily_raiff = math.ceil(raiff_amount * raiff_rate / 365 * 0.9 * 100) / 100
+    raiff["amount"] = round(raiff_amount + daily_raiff, 2)
+    data["cont_economii_raiffeisen"] = raiff
+
     with open(extra_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
-    logger.info(f"Dobândă zilnică adăugată: +{daily_economii} RON economii, +{daily_urgenta} RON fond urgență")
+    logger.info(f"Dobândă zilnică adăugată: +{daily_economii} RON economii, +{daily_urgenta} RON fond urgență, +{daily_raiff} RON Raiffeisen")
 
 
 def start_scheduler(interval_minutes: int, db_factory):

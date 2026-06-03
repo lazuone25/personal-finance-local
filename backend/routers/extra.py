@@ -43,6 +43,12 @@ def load_data() -> dict:
             }
         if "cash" not in data:
             data["cash"] = 0.0
+        if "cont_economii_raiffeisen" not in data:
+            data["cont_economii_raiffeisen"] = {
+                "amount": 0.0,
+                "interest_rate": 0.05,
+                "interest_start_date": date.today().strftime("%Y-%m-%d"),
+            }
         return data
     return DEFAULT_DATA.copy()
 
