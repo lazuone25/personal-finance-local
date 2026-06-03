@@ -35,7 +35,8 @@ function groupByOwner(accounts, connections) {
     if (!currency) continue
     const amount = parseFloat(acc.balance?.amount || 0)
     if (acc.bank_name === 'Revolut' && currency === 'USD') continue
-    const owner = connOwnerMap[acc.bank_connection_id] || 'andrei'
+    const connOwner = connOwnerMap[acc.bank_connection_id] || 'andrei'
+    const owner = acc.name?.includes('&') ? 'comun' : connOwner
     const label = acc.bank_name || 'Altele'
     if (!groups[owner][label]) groups[owner][label] = {}
     if (!groups[owner][label][currency]) groups[owner][label][currency] = 0
