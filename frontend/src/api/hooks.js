@@ -183,6 +183,7 @@ export function useDatorii() {
   return useQuery({
     queryKey: ['datorii'],
     queryFn: () => api.get('/datorii').then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -198,6 +199,35 @@ export function useAddPayment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ accountId, ...data }) => api.post(`/datorii/${accountId}/payments`, data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['datorii'] }),
+  })
+}
+
+export function useImportPdf() {
+  return useMutation({
+    mutationFn: (file) => {
+      const form = new FormData()
+      form.append('file', file)
+      return api.post('/datorii/card_raiffeisen/import-pdf', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then(r => r.data)
+    },
+  })
+}
+
+export function useApplyImport() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (installments) => api.post('/datorii/card_raiffeisen/import-pdf/apply', installments).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['datorii'] }),
+  })
+}
+
+export function useUpdateInstallment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ accountId, installmentId, ...data }) =>
+      api.put(`/datorii/${accountId}/installments/${installmentId}`, data).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['datorii'] }),
   })
 }

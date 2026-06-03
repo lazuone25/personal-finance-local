@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useExtra, useUpdateExtra, useAddTransfer, useUpdateTransfer, useDeleteTransfer, useAddDePrimit, useDeleteDePrimit } from '../api/hooks'
 
 function formatAmt(val) {
-  return parseFloat(val || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2 })
+  return parseFloat(val || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function daysSince(dateStr) {
@@ -216,14 +216,14 @@ export default function Extra() {
 
   // Dobandă economii Revolut 3%/an
   const economiiDays = daysSince(data.interest_start_date)
-  const dobandaEconomii = (data.main_balance || 0) * 0.03 * economiiDays / 365
+  const dobandaEconomii = (data.main_balance || 0) * 0.03 * economiiDays / 365 * 0.9
 
   const fonduriNefolosite = (data.main_balance || 0) - baniPersonali - alocatieEma + dobandaEconomii
 
   // Dobandă fond urgență
   const fondUrgenta = data.fond_urgenta || { amount: 0, interest_rate: 0.025, interest_start_date: null }
   const fondUrgentaDays = daysSince(fondUrgenta.interest_start_date)
-  const dobandaFondUrgenta = (fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) * fondUrgentaDays / 365
+  const dobandaFondUrgenta = (fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) * fondUrgentaDays / 365 * 0.9
 
   const dePrimit = data.de_primit || []
 
