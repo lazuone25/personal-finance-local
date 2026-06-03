@@ -26,6 +26,8 @@ const INTERNAL_PATTERNS = [
   /^cap\.dep/i,
   /^from economii/i,
   /^bani personali/i,
+  /^tod autopayment/i,
+  /^plata restante/i,
   /ordering party.*andrei anghel/i,
 ]
 

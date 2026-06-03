@@ -14,6 +14,8 @@ const INTERNAL_PATTERNS = [
   /^From Anca/i,               // Revolut: transfer from joint to personal
   /^To account,/i,             // ING: transfer to own account
   /transfer depozit/i,         // Raiffeisen↔ING deposit transfers
+  /^tod autopayment/i,         // Raiffeisen RON→EUR intern
+  /^plata restante/i,          // Raiffeisen EUR credit intern (FX conversion)
 ]
 
 function detectInternalTransfers(transactions) {
