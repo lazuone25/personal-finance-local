@@ -41,11 +41,9 @@ export default function Settings() {
             style={{ padding: '0.5rem', minWidth: 200 }}
           >
             <option value="" disabled>Alege banca...</option>
-            {banks
-              .filter(b => !connectedIds.has(b.bic))
-              .map(b => (
-                <option key={b.bic || b.name} value={b.bic}>{b.name}</option>
-              ))}
+            {banks.map(b => (
+              <option key={b.bic || b.name} value={b.bic}>{b.name}</option>
+            ))}
           </select>
           <button
             onClick={handleConnect}

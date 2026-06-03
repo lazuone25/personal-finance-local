@@ -24,23 +24,20 @@ function groupByCurrency(accounts) {
   return grouped
 }
 
-function groupByConnection(accounts) {
+function groupByOwner(accounts) {
   const all = ALL_TYPES.flatMap(t => accounts?.[t] || [])
-  const groups = {}
+  const groups = { comun: {}, andrei: {}, anca: {} }
   for (const acc of all) {
     const currency = acc.balance?.currency || acc.currency
     if (!currency) continue
     const amount = parseFloat(acc.balance?.amount || 0)
-    // Split Revolut: accounts with "&" in name are "comun"
-    let label = acc.bank_name || 'Altele'
-    if (acc.bank_name === 'Revolut' && acc.name?.includes('&')) {
-      label = 'Revolut (comun)'
-    }
-    // Hide USD for Revolut (unused)
     if (acc.bank_name === 'Revolut' && currency === 'USD') continue
-    if (!groups[label]) groups[label] = {}
-    if (!groups[label][currency]) groups[label][currency] = 0
-    groups[label][currency] += amount
+    const isComun = acc.bank_name === 'Revolut' && acc.name?.includes('&')
+    const owner = isComun ? 'comun' : 'andrei'
+    const label = acc.bank_name || 'Altele'
+    if (!groups[owner][label]) groups[owner][label] = {}
+    if (!groups[owner][label][currency]) groups[owner][label][currency] = 0
+    groups[owner][label][currency] += amount
   }
   return groups
 }
@@ -75,7 +72,7 @@ export default function Dashboard() {
   if (isError) return <p style={{ color: '#EF4444' }}>Eroare la încărcarea datelor. Verifică că serverul rulează.</p>
 
   const byCurrency = groupByCurrency(accounts)
-  const byConnection = groupByConnection(accounts)
+  const byOwner = groupByOwner(accounts)
   const recent = transactions.slice(0, 10)
 
   const depositRonTotal = deposits.filter(d => d.currency === 'RON').reduce((s, d) => s + parseFloat(d.amount), 0)
@@ -150,45 +147,55 @@ export default function Dashboard() {
         <SummaryCard title="Extra" amount={extraTotal} currency="RON" color="#06B6D4" extra={toEur(extraTotal, rates)} />
       </div>
 
-      {/* Per bancă */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', fontWeight: 700 }}>
-          Per bancă
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          {Object.entries(byConnection).map(([label, currencies]) => {
-            // bankName is the base name without "(comun)"
-            const bankName = label.replace(' (comun)', '')
-            const bankColor = getBankColor(bankName)
-            const currList = Object.entries(currencies)
-            const subtitleParts = currList.map(([c, a]) => {
-              const formatted = a.toLocaleString('ro-RO', { minimumFractionDigits: 2 }) + ' ' + c
-              if (c === 'RON') {
-                const eurStr = toEur(a, rates)
-                return eurStr ? formatted + ' ' + eurStr : formatted
-              }
-              return formatted
-            })
-            const subtitle = subtitleParts.join(' · ')
-
-            return (
-              <div key={label} style={{
-                background: '#fff',
-                borderRadius: 12,
-                padding: '1.25rem 1.5rem',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                borderLeft: `4px solid ${bankColor}`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: bankColor, flexShrink: 0, display: 'inline-block' }} />
-                  <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', margin: 0 }}>{label}</p>
-                </div>
-                <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.6, margin: 0 }}>{subtitle}</p>
+      {/* Per bancă — COMUN / ANDREI / ANCA */}
+      {[
+        { key: 'comun', label: 'Comun', accentColor: '#8B5CF6' },
+        { key: 'andrei', label: 'Andrei', accentColor: '#3B82F6' },
+        { key: 'anca', label: 'Anca', accentColor: '#EC4899' },
+      ].map(({ key, label, accentColor }) => {
+        const banks = byOwner[key]
+        return (
+          <div key={key} style={{ marginBottom: '1.5rem' }}>
+            <h2 style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem', fontWeight: 700 }}>
+              Per bancă — <span style={{ color: accentColor }}>{label}</span>
+            </h2>
+            {Object.keys(banks).length === 0 ? (
+              <div style={{ color: '#94A3B8', fontSize: '0.85rem', padding: '0.5rem 0' }}>
+                Nicio bancă conectată.
               </div>
-            )
-          })}
-        </div>
-      </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                {Object.entries(banks).map(([bankLabel, currencies]) => {
+                  const bankColor = getBankColor(bankLabel)
+                  const subtitleParts = Object.entries(currencies).map(([c, a]) => {
+                    const formatted = a.toLocaleString('ro-RO', { minimumFractionDigits: 2 }) + ' ' + c
+                    if (c === 'RON') {
+                      const eurStr = toEur(a, rates)
+                      return eurStr ? formatted + ' ' + eurStr : formatted
+                    }
+                    return formatted
+                  })
+                  return (
+                    <div key={bankLabel} style={{
+                      background: '#fff',
+                      borderRadius: 12,
+                      padding: '1.25rem 1.5rem',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                      borderLeft: `4px solid ${bankColor}`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: bankColor, flexShrink: 0, display: 'inline-block' }} />
+                        <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', margin: 0 }}>{bankLabel}</p>
+                      </div>
+                      <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.6, margin: 0 }}>{subtitleParts.join(' · ')}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
 
       {/* Recent transactions */}
       <section>
