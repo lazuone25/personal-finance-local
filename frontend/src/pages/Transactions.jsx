@@ -16,6 +16,7 @@ const INTERNAL_PATTERNS = [
   /transfer depozit/i,         // Raiffeisen↔ING deposit transfers
   /^tod autopayment/i,         // Raiffeisen RON→EUR intern
   /^plata restante/i,          // Raiffeisen EUR credit intern (FX conversion)
+  /^bani personali/i,          // transfer intern Revolut
 ]
 
 function detectInternalTransfers(transactions) {
