@@ -20,9 +20,9 @@ SLOW_BANK_INTERVALS: dict[str, int] = {
 }
 
 
-def _should_sync_bank(bank_name: str, default_interval_minutes: int) -> bool:
+def _should_sync_bank(conn_id: int, bank_name: str, default_interval_minutes: int) -> bool:
     interval = SLOW_BANK_INTERVALS.get(bank_name, default_interval_minutes)
-    last = _bank_last_sync.get(bank_name)
+    last = _bank_last_sync.get(conn_id)
     if last is None:
         return True
     return (datetime.now(timezone.utc) - last).total_seconds() >= interval * 60
@@ -39,8 +39,8 @@ def sync_all(db: Session, force_bank: str | None = None) -> dict:
     for conn in connections:
         if force_bank and conn.bank_name != force_bank:
             continue
-        if not force_bank and not _should_sync_bank(conn.bank_name, default_interval):
-            logger.info(f"Skipping {conn.bank_name} — synced recently (interval: {SLOW_BANK_INTERVALS.get(conn.bank_name, default_interval)} min)")
+        if not force_bank and not _should_sync_bank(conn.id, conn.bank_name, default_interval):
+            logger.info(f"Skipping {conn.bank_name} (id={conn.id}) — synced recently (interval: {SLOW_BANK_INTERVALS.get(conn.bank_name, default_interval)} min)")
             results.append({"bank": conn.bank_name, "status": "skipped"})
             continue
 
@@ -88,7 +88,7 @@ def sync_all(db: Session, force_bank: str | None = None) -> dict:
                 logger.error(f"Sync failed for account {acc.external_id}: {e}")
 
         if conn_ok:
-            _bank_last_sync[conn.bank_name] = datetime.now(timezone.utc)
+            _bank_last_sync[conn.id] = datetime.now(timezone.utc)
             results.append({"bank": conn.bank_name, "status": "ok"})
         else:
             results.append({"bank": conn.bank_name, "status": "partial_error"})
