@@ -67,17 +67,17 @@ frontend/src/
 ## Pattern-uri importante
 
 ### Calcul dobândă corect (ca banca)
-Revolut rotunjește dobânda zilnică la **cel mai apropiat ban** (round half-up), NU în
-sus (ceil). `ceil` ieșea cu ~1 ban/zi peste soldul real → drift. Frontend și backend
-trebuie să folosească aceeași rotunjire (JS `Math.round` ≡ Python `floor(x*100 + 0.5)`,
-ca să coincidă pe zilele exact la jumătate; `round()` din Python e banker's rounding).
+Revolut rotunjește dobânda zilnică **în sus** (`ceil`) — observat 10.06.2026: Revolut
+arăta 29542.54, app-ul nostru 29542.53 (app-ul rămăsese SUB Revolut). `ceil` e mai
+aproape de comportamentul Revolut. NU folosi `round`/`floor` (ies prea mici). Frontend
+și backend folosesc același `ceil`.
 ```js
-// Frontend (Extra.jsx)
-const dailyNet = Math.round(sold * rata / 365 * 0.9 * 100) / 100
+// Frontend (Revolut folosește ceil)
+const dailyNet = Math.ceil(sold * rata / 365 * 0.9 * 100) / 100
 const total = dailyNet * zile
 
-// Backend job (sync_service.py) — half-up identic cu Math.round
-daily = math.floor(balance * 0.03 / 365 * 0.9 * 100 + 0.5) / 100
+// Backend job (sync_service.py)
+daily = math.ceil(balance * 0.03 / 365 * 0.9 * 100) / 100
 ```
 
 ### Dropdown peste tabel (nu tăiat de overflow)

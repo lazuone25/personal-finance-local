@@ -230,13 +230,13 @@ export default function Extra() {
   }
 
   const economiiDays = daysInclusive(data.interest_start_date)
-  const dobandaZilnicaEconomii = Math.round((data.main_balance || 0) * 0.03 / 365 * 0.9 * 100) / 100
+  const dobandaZilnicaEconomii = Math.ceil((data.main_balance || 0) * 0.03 / 365 * 0.9 * 100) / 100
   const dobandaEconomii = dobandaZilnicaEconomii * economiiDays
 
   const fonduriNefolosite = (data.main_balance || 0) - baniPersonali - alocatieEma
 
   const fondUrgentaDays = daysInclusive(fondUrgenta.interest_start_date)
-  const dobandaZilnicaUrgenta = Math.round((fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) / 365 * 0.9 * 100) / 100
+  const dobandaZilnicaUrgenta = Math.ceil((fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) / 365 * 0.9 * 100) / 100
   const dobandaFondUrgenta = dobandaZilnicaUrgenta * fondUrgentaDays
 
   const raiffLastPayment = contRaiffeisen.last_payment_date
