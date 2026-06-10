@@ -134,7 +134,7 @@ def _add_daily_interest():
     days_economii = _days_elapsed(data.get("interest_start_date"))
     total_economii = 0.0
     for _ in range(days_economii):
-        daily = math.ceil(balance * 0.03 / 365 * 0.9 * 100) / 100
+        daily = math.floor(balance * 0.03 / 365 * 0.9 * 100 + 0.5) / 100
         balance = round(balance + daily, 2)
         total_economii = round(total_economii + daily, 2)
     data["main_balance"] = balance
@@ -147,7 +147,7 @@ def _add_daily_interest():
     days_urgenta = _days_elapsed(fond.get("interest_start_date"))
     total_urgenta = 0.0
     for _ in range(days_urgenta):
-        daily = math.ceil(fond_amount * fond_rate / 365 * 0.9 * 100) / 100
+        daily = math.floor(fond_amount * fond_rate / 365 * 0.9 * 100 + 0.5) / 100
         fond_amount = round(fond_amount + daily, 2)
         total_urgenta = round(total_urgenta + daily, 2)
     fond["amount"] = fond_amount

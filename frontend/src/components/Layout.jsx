@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 
 const navItems = [
   { to: '/', label: 'DASHBOARD' },
@@ -31,15 +31,17 @@ export default function Layout({ children }) {
           padding: '0 1.5rem',
           height: 56,
         }}>
-          <span style={{
+          <Link to="/" style={{
             color: '#fff',
             fontWeight: 700,
             fontSize: '1.1rem',
             letterSpacing: '-0.01em',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+            textDecoration: 'none',
+            cursor: 'pointer',
           }}>
-            MoneyTrack
-          </span>
+            Tracker Anghel Family
+          </Link>
           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
             {navItems.map(({ to, label }) => (
               <NavLink
