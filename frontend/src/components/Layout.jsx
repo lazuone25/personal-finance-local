@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
+import useIsMobile from '../hooks/useIsMobile'
 
 const navItems = [
   { to: '/', label: 'DASHBOARD' },
@@ -12,17 +13,6 @@ const navItems = [
   { to: '/statistici', label: 'STATISTICI' },
   { to: '/settings', label: 'SETĂRI' },
 ]
-
-function useIsMobile(breakpoint = 820) {
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia(`(max-width: ${breakpoint}px)`).matches)
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`)
-    const onChange = (e) => setIsMobile(e.matches)
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [breakpoint])
-  return isMobile
-}
 
 export default function Layout({ children }) {
   const isMobile = useIsMobile()

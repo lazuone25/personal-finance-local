@@ -1,6 +1,7 @@
 import { useAccounts, useTransactions, useSyncStatus, useDeposits, useRates, useXtbPortfolio, useExtra, useDatorii, useConnections } from '../api/hooks'
 import SummaryCard from '../components/SummaryCard'
 import { getBankColor } from '../utils/bankColors'
+import useIsMobile from '../hooks/useIsMobile'
 
 const ALL_TYPES = ['checking', 'card', 'savings', 'deposit', 'other']
 
@@ -58,6 +59,7 @@ function currencyColor(currency) {
 }
 
 export default function Dashboard() {
+  const isMobile = useIsMobile()
   const { data: accounts, isLoading, isError } = useAccounts()
   const { data: connections = [] } = useConnections()
   const { data: transactions = [] } = useTransactions()
@@ -112,7 +114,7 @@ export default function Dashboard() {
       </div>
 
       {/* Top 5 summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(5, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         {/* TOTAL RON — conturi + depozite + investitii + extra */}
         <SummaryCard
           title="Total RON"
