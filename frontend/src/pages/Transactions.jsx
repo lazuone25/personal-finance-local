@@ -249,7 +249,7 @@ export default function Transactions() {
       }}>
         <select onChange={e => setFilter('bank_id', e.target.value)} style={inputStyle}>
           <option value="">Toate băncile</option>
-          {connections.map(c => <option key={c.bank_id} value={c.bank_id}>{c.bank_name}</option>)}
+          {[...new Map(connections.map(c => [c.bank_id, c])).values()].map(c => <option key={c.bank_id} value={c.bank_id}>{c.bank_name}</option>)}
         </select>
         <select onChange={e => setFilter('transaction_type', e.target.value)} style={inputStyle}>
           <option value="">Toate tipurile</option>

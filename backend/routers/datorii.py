@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import json
+import math
 import pathlib
 import uuid
 import re
@@ -30,6 +31,43 @@ DEFAULT_DATA = {
 }
 
 
+def _recalculate_rata(account: dict) -> dict:
+    """Recalculează plata_minima după formula de anuitate dacă există data_expirare și rata_dobanzii."""
+    expirare = account.get("data_expirare")
+    rata_anuala = account.get("rata_dobanzii", 0)
+    sold = account.get("sold_curent", 0)
+    zi_scadenta = int(account.get("zi_scadenta", 1))
+    if not expirare or not rata_anuala or not sold:
+        return account
+
+    today = date.today()
+    expiry = date.fromisoformat(expirare)
+
+    # Next scadenta
+    try:
+        next_scad = today.replace(day=zi_scadenta)
+    except ValueError:
+        next_scad = today.replace(day=1)
+    if next_scad <= today:
+        m = next_scad.month + 1 if next_scad.month < 12 else 1
+        y = next_scad.year if next_scad.month < 12 else next_scad.year + 1
+        try:
+            next_scad = next_scad.replace(year=y, month=m)
+        except ValueError:
+            next_scad = next_scad.replace(year=y, month=m, day=1)
+
+    # Luni rămase de la next_scad până la expiry (inclusiv)
+    n = (expiry.year - next_scad.year) * 12 + (expiry.month - next_scad.month) + 1
+    if n <= 0:
+        return account
+
+    r = rata_anuala / 100 / 12
+    factor = (1 + r) ** n
+    pmt = round(sold * r * factor / (factor - 1), 2)
+    account["plata_minima"] = pmt
+    return account
+
+
 def load_data() -> dict:
     if DATORII_FILE.exists():
         with open(DATORII_FILE, "r", encoding="utf-8") as f:
@@ -52,9 +90,11 @@ def update_datorii(account_id: str, payload: dict):
     data = load_data()
     if account_id not in data:
         data[account_id] = dict(DEFAULT_DATA.get(account_id, {}))
-    for key in ("sold_curent", "limita", "dobanda", "rata_dobanzii", "zi_scadenta", "plata_minima", "data_referinta"):
+    for key in ("sold_curent", "limita", "dobanda", "rata_dobanzii", "zi_scadenta", "plata_minima", "data_referinta", "data_expirare"):
         if key in payload:
             data[account_id][key] = payload[key]
+    if "sold_curent" in payload or "rata_dobanzii" in payload:
+        data[account_id] = _recalculate_rata(data[account_id])
     save_data(data)
     return data
 
@@ -69,7 +109,33 @@ def add_payment(account_id: str, payment: dict):
     payment["id"] = str(uuid.uuid4())
     payment["date"] = payment.get("date", datetime.now().strftime("%Y-%m-%d"))
     amount = float(payment.get("amount", 0))
-    data[account_id]["sold_curent"] = round(data[account_id]["sold_curent"] - amount, 2)
+
+    sold = data[account_id]["sold_curent"]
+
+    # Pentru credit_revolut: opțional adaugă dobânda acumulată de la ultima scadență
+    if account_id == "credit_revolut" and payment.get("include_dobanda", False):
+        rata = data[account_id].get("rata_dobanzii", 0) / 100
+        zi_scadenta = int(data[account_id].get("zi_scadenta", 1))
+        today = date.today()
+        try:
+            candidate = today.replace(day=zi_scadenta)
+        except ValueError:
+            candidate = today.replace(day=1)
+        if candidate > today:
+            m = today.month - 1 or 12
+            y = today.year if today.month > 1 else today.year - 1
+            try:
+                candidate = candidate.replace(year=y, month=m)
+            except ValueError:
+                candidate = today
+        zile = (today - candidate).days
+        dobanda_zilnica = round(sold * rata / 365 * 100) / 100
+        dobanda_acumulata = round(dobanda_zilnica * zile, 2)
+        payment["dobanda_inclusa"] = dobanda_acumulata
+        sold = round(sold + dobanda_acumulata, 2)
+
+    data[account_id]["sold_curent"] = round(sold - amount, 2)
+    data[account_id] = _recalculate_rata(data[account_id])
     data[account_id]["payments"].insert(0, payment)
     save_data(data)
     return data

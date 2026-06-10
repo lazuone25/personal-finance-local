@@ -319,13 +319,14 @@ function CreditRevolut({ data, updateDatorii }) {
   const [showForm, setShowForm] = useState(false)
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
+  const [includeDobanda, setIncludeDobanda] = useState(true)
 
   const sold = data?.sold_curent || 0
 
   const submitPayment = () => {
     const val = parseFloat(amount)
     if (!val) return
-    addPayment.mutate({ accountId: 'credit_revolut', amount: val, note })
+    addPayment.mutate({ accountId: 'credit_revolut', amount: val, note, include_dobanda: includeDobanda })
     setAmount('')
     setNote('')
     setShowForm(false)
@@ -383,6 +384,10 @@ function CreditRevolut({ data, updateDatorii }) {
             onKeyDown={e => e.key === 'Enter' && submitPayment()}
             style={{ flex: 1, minWidth: 130, padding: '0.45rem 0.7rem', borderRadius: 7, border: '1px solid #CBD5E1', fontSize: '0.88rem', outline: 'none' }}
           />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <input type="checkbox" checked={includeDobanda} onChange={e => setIncludeDobanda(e.target.checked)} />
+            Include dobânda
+          </label>
           <button onClick={submitPayment} style={{ padding: '0.45rem 1rem', borderRadius: 7, border: 'none', background: '#6366F1', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Înregistrează</button>
           <button onClick={() => setShowForm(false)} style={{ padding: '0.45rem 0.6rem', borderRadius: 7, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontSize: '0.85rem', cursor: 'pointer' }}>✕</button>
         </div>
@@ -395,6 +400,16 @@ function CreditRevolut({ data, updateDatorii }) {
         <EditableField label="Rată lunară" value={data?.plata_minima || 0} onSave={v => updateDatorii.mutate({ accountId: 'credit_revolut', plata_minima: v })} suffix=" LEI" />
         <EditableField label="Zi scadentă" value={data?.zi_scadenta || 1} onSave={v => updateDatorii.mutate({ accountId: 'credit_revolut', zi_scadenta: Math.round(v) })} suffix=" a lunii" integer />
         <DobandaAcumulata data={data} />
+        {data?.suma_originala > 0 && (() => {
+          const pct = Math.round((1 - sold / data.suma_originala) * 1000) / 10
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rambursat</span>
+              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#10B981' }}>{pct}%</span>
+              <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>din {fmt(data.suma_originala)} LEI</span>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Payment history */}
@@ -409,6 +424,7 @@ function CreditRevolut({ data, updateDatorii }) {
               </div>
               <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                 <span style={{ fontWeight: 700, color: '#6366F1', fontSize: '0.88rem' }}>−{fmt(p.amount)} LEI</span>
+                {p.dobanda_inclusa > 0 && <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>(+{fmt(p.dobanda_inclusa)} dob.)</span>}
                 <button
                   onClick={() => deletePayment.mutate({ accountId: 'credit_revolut', paymentId: p.id })}
                   style={{ background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', fontSize: '0.8rem', padding: '0.1rem 0.3rem', lineHeight: 1 }}

@@ -292,6 +292,16 @@ function CategoriiTab({ transactions, catData }) {
     const txs = cheltuieliLuna.filter(tx => owners[String(tx.id)] === owner.id)
     const pieData = buildPieData(txs)
     const total = pieData.reduce((s, d) => s + d.value, 0)
+    const [expandedCat, setExpandedCat] = useState(null)
+
+    // map catName → transactions
+    const catTxs = {}
+    for (const tx of txs) {
+      const catId = classifyTx(tx, catData)
+      const cat = categories.find(c => c.id === catId) || { name: catId }
+      if (!catTxs[cat.name]) catTxs[cat.name] = []
+      catTxs[cat.name].push(tx)
+    }
 
     return (
       <div style={{ marginBottom: '2rem' }}>
@@ -325,18 +335,44 @@ function CategoriiTab({ transactions, catData }) {
               </ResponsiveContainer>
             </div>
             <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: '1.25rem' }}>
-              {pieData.map(({ name, value, color }) => (
-                <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid #F1F5F9' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.83rem', color: '#1E293B' }}>{name}</span>
+              {pieData.map(({ name, value, color }) => {
+                const isOpen = expandedCat === name
+                const catTransactions = catTxs[name] || []
+                return (
+                  <div key={name}>
+                    <div
+                      onClick={() => setExpandedCat(isOpen ? null : name)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: isOpen ? 'none' : '1px solid #F1F5F9', cursor: 'pointer' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.83rem', color: '#1E293B' }}>{name}</span>
+                        <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>{catTransactions.length}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#1E293B' }}>{value.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</span>
+                        <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>{Math.round(value / total * 100)}%</span>
+                        <span style={{ fontSize: '0.65rem', color: '#CBD5E1' }}>{isOpen ? '▲' : '▼'}</span>
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <div style={{ background: '#F8FAFC', borderRadius: '0 0 6px 6px', marginBottom: '0.25rem', borderBottom: '1px solid #F1F5F9' }}>
+                        {catTransactions.map(tx => (
+                          <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.75rem', borderTop: '1px solid #F1F5F9' }}>
+                            <div>
+                              <span style={{ fontSize: '0.75rem', color: '#1E293B' }}>{tx.description || '—'}</span>
+                              <span style={{ fontSize: '0.68rem', color: '#94A3B8', marginLeft: '0.4rem' }}>{tx.booking_date}</span>
+                            </div>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#EF4444', whiteSpace: 'nowrap' }}>
+                              −{parseFloat(tx.amount).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} {tx.currency}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#1E293B' }}>{value.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</span>
-                    <span style={{ fontSize: '0.7rem', color: '#94A3B8', marginLeft: '0.4rem' }}>{Math.round(value / total * 100)}%</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', marginTop: '0.15rem' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748B' }}>Total</span>
                 <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#EF4444' }}>{total.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</span>
