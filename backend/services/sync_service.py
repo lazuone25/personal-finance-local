@@ -102,7 +102,13 @@ def get_last_sync() -> datetime | None:
 
 
 def _add_daily_interest():
-    """Adaugă dobânda zilnică (net după 10% impozit) la soldurile din extra_data.json."""
+    """Adaugă dobânda zilnică (net după 10% impozit) la soldurile din extra_data.json.
+
+    Recuperează toate zilele scurse de la interest_start_date, cu compunere zilnică
+    (ca Revolut, care creditează dobânda zilnic). Astfel soldul rămâne corect chiar
+    dacă serverul/PC-ul a fost oprit la 00:01 și jobul a sărit câteva zile.
+    Idempotent în aceeași zi: dacă interest_start_date == azi, nu adaugă nimic.
+    """
     import json
     import pathlib
     import math
@@ -112,22 +118,51 @@ def _add_daily_interest():
     with open(extra_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Economii Revolut 3%/an net 90%
-    balance = data.get("main_balance", 0)
-    daily_economii = math.ceil(balance * 0.03 / 365 * 0.9 * 100) / 100
-    data["main_balance"] = round(balance + daily_economii, 2)
+    today = date.today()
+    today_str = today.isoformat()
 
-    # Fond urgență 2.5%/an net 90%
+    def _days_elapsed(start_str):
+        if not start_str:
+            return 1  # prima rulare: contează ca o zi
+        try:
+            return max(0, (today - date.fromisoformat(start_str)).days)
+        except ValueError:
+            return 1
+
+    # Economii Revolut 3%/an net 90% — compunere zilnică, recuperează zilele lipsă
+    balance = data.get("main_balance", 0)
+    days_economii = _days_elapsed(data.get("interest_start_date"))
+    total_economii = 0.0
+    for _ in range(days_economii):
+        daily = math.ceil(balance * 0.03 / 365 * 0.9 * 100) / 100
+        balance = round(balance + daily, 2)
+        total_economii = round(total_economii + daily, 2)
+    data["main_balance"] = balance
+    data["interest_start_date"] = today_str
+
+    # Fond urgență 2.5%/an net 90% — compunere zilnică, recuperează zilele lipsă
     fond = data.get("fond_urgenta", {})
     fond_amount = fond.get("amount", 0)
     fond_rate = fond.get("interest_rate", 0.025)
-    daily_urgenta = math.ceil(fond_amount * fond_rate / 365 * 0.9 * 100) / 100
-    fond["amount"] = round(fond_amount + daily_urgenta, 2)
+    days_urgenta = _days_elapsed(fond.get("interest_start_date"))
+    total_urgenta = 0.0
+    for _ in range(days_urgenta):
+        daily = math.ceil(fond_amount * fond_rate / 365 * 0.9 * 100) / 100
+        fond_amount = round(fond_amount + daily, 2)
+        total_urgenta = round(total_urgenta + daily, 2)
+    fond["amount"] = fond_amount
+    fond["interest_start_date"] = today_str
     data["fond_urgenta"] = fond
+
+    if days_economii == 0 and days_urgenta == 0:
+        return  # deja la zi, nimic de scris
 
     with open(extra_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
-    logger.info(f"Dobândă zilnică adăugată: +{daily_economii} RON economii, +{daily_urgenta} RON fond urgență")
+    logger.info(
+        f"Dobândă adăugată ({days_economii}z economii / {days_urgenta}z fond): "
+        f"+{total_economii} RON economii, +{total_urgenta} RON fond urgență"
+    )
 
 
 def _credit_raiffeisen_interest():

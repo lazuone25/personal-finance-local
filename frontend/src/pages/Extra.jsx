@@ -233,7 +233,7 @@ export default function Extra() {
   const dobandaZilnicaEconomii = Math.ceil((data.main_balance || 0) * 0.03 / 365 * 0.9 * 100) / 100
   const dobandaEconomii = dobandaZilnicaEconomii * economiiDays
 
-  const fonduriNefolosite = (data.main_balance || 0) - baniPersonali - alocatieEma + dobandaEconomii
+  const fonduriNefolosite = (data.main_balance || 0) - baniPersonali - alocatieEma
 
   const fondUrgentaDays = daysInclusive(fondUrgenta.interest_start_date)
   const dobandaZilnicaUrgenta = Math.ceil((fondUrgenta.amount || 0) * (fondUrgenta.interest_rate || 0.025) / 365 * 0.9 * 100) / 100
@@ -278,6 +278,11 @@ export default function Extra() {
                 <EditableAmount value={data.main_balance} onSave={updateMainBalance} fontSize="1.5rem" />
                 <span style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 500 }}>{data.currency}</span>
               </div>
+              {dobandaEconomii > 0 && (
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', color: '#10B981', fontWeight: 500 }}>
+                  +{formatAmt(dobandaEconomii)} RON dobândă (de la {fmtDate(data.interest_start_date)})
+                </p>
+              )}
             </div>
             <span style={{ color: '#CBD5E1', fontSize: '0.75rem', userSelect: 'none' }}>{economiiCollapsed ? '▶' : '▼'}</span>
           </div>
@@ -385,11 +390,6 @@ export default function Extra() {
               </span>
               <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{data.currency}</span>
             </div>
-            {dobandaEconomii > 0 && (
-              <p style={{ margin: '0.15rem 0 0', fontSize: '0.7rem', color: '#10B981', fontWeight: 500 }}>
-                Dobândă de la {fmtDate(data.interest_start_date)}: {formatAmt(dobandaEconomii)} RON
-              </p>
-            )}
           </div>
         </div>
       </div>}
