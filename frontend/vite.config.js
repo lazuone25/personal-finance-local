@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     host: true,   // ascultă pe 0.0.0.0 → accesibil din rețea
     proxy: {
-      '/api': 'http://localhost:8000',
+      // VITE_API_PROXY permite alt backend (ex. instanța de test pe 8001)
+      '/api': process.env.VITE_API_PROXY || 'http://localhost:8000',
     },
   },
 })
